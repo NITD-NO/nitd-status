@@ -21,6 +21,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B6 | Tema følger systemet (`prefers-color-scheme`), med knapp for å bytte. Valget lagres lokalt (`localStorage`, ingen cookie). | WCAG i lyst og mørkt tema, samme nøkkel (`nitd_theme`) som nettstedet. |
 | B7 | «Registrert av NITD» (`observedStatus`) publiseres **alltid manuelt**, etter en vurdering. Aldri automatisk fra målinger. | Egne målinger kan gi feil alarm. En feil rød status svekker tilliten mer enn en litt sen gul. |
 | B8 | Hendelser slettes aldri. Avsluttede hendelser vises i arkivet i 90 dager. Eldre filer blir liggende i `data/hendelser/` (og i git-historikken), men publiseres ikke. | Sporbarhet for ISO 27001 og NIS2. |
+| B10 | **Ingen manuelt vedlikehold av leverandørstatus.** `vendorStatus` settes bare automatisk fra offentlige, maskinlesbare kilder (7.1). Har leverandøren ingen slik kilde, er `vendorStatus` alltid `null`, og siden viser en fast lenke til leverandørens egen statusside. Besluttet av Johannes 13. nov. 2026. | Statussiden skal være sannhetskilden og ikke kreve vedlikehold. En manuell kopi av leverandørens status blir fort utdatert. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -198,7 +199,7 @@ Verifisert 13. nov. 2026 fra skymiljø, uten innlogging. Detaljer i README.
 | Uniweb | `https://status.uniweb.no` (Atlassian Statuspage): `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | **Verifisert.** Har egne komponenter for «Web hosting» og «E-mail» (med underkomponenter). Tidssone Europe/Amsterdam. |
 | Zyxel | `https://www.nebulastatus.zyxel.com` (Atlassian Statuspage): `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | **Verifisert.** Gjelder bare Nebula (skytjenesten). Ikke brannmurer uten Nebula, firmware eller sårbarheter. Uten `www.` svarer adressen ikke. |
 | Kundeportalen (HaloPSA, intern kilde) | `https://status.haloservicesolutions.com` (status.io), RSS: `/pages/63ef45da7ee94905308a1a4a/rss` | RSS | **Verifisert.** Kundeportalen kjører på HaloPSA. Verktøynavnet skal ikke stå på siden, så kilden brukes **bare internt** som grunnlag for `observedStatus` på «Kundeportal». Ingen lenke dit fra siden. Se åpent spørsmål 11. |
-| Sophos | `https://status.sophos.com` (oppgitt som offisiell statusside i Sophos' egen dokumentasjon) | Ukjent | **Ikke verifisert maskinelt.** Siden svarer 403 «Invalid request blocked» på automatiske kall fra skymiljøet. Vi omgår ikke sperren. Inntil videre: lenke til siden, `vendorStatus` settes manuelt etter at en person har lest den, og `observedStatus` er hovedkilden. |
+| Sophos | `https://status.sophos.com` (oppgitt som offisiell statusside i Sophos' egen dokumentasjon) | Ukjent | **Ikke verifisert maskinelt.** Siden svarer 403 «Invalid request blocked» på automatiske kall fra skymiljøet. Vi omgår ikke sperren. Etter B10: `vendorStatus` er alltid `null`, siden viser fast lenke til status.sophos.com, og `observedStatus` settes bare når NITD ser en feil. Sophos Notification Service (SMS/e-post til enkeltpersoner, med reCAPTCHA) brukes ikke som kilde. Senere: test om siden svarer fra GitHub Actions med vanlige kall; gjør den det, tas den med i 7.1. |
 
 Ikke brukt: Downdetector, StatusGator, isdown.app og lignende (tredjepart, skraping
 eller innlogging).
@@ -271,13 +272,14 @@ godkjent.** Minimumskrav:
 | Personopplysninger eller interne navn i tekst | Brudd på GDPR / avsløring av interne systemer | Validering i bygget (4.4), gjennomgang i PR, ingen fritekst fra kunder. |
 | Merge krever en person | Treg oppdatering midt i natten | Unntak for `data/`-endringer når Johannes har godkjent for hendelsen (CLAUDE.md). Byggetid < 1 min. |
 | Kundeportalen (HaloPSA) er nede | Kunder kan ikke melde sak, og vi mister saksverktøyet under hendelsen | Telefon 69 81 10 00 står alltid på siden. Kundeportalen er egen komponent. |
-| Sophos sperrer automatiske kall | Ingen automatisk leverandørstatus | Manuell `vendorStatus`, lenke til Sophos' side. |
+| Sophos sperrer automatiske kall | Ingen automatisk leverandørstatus for Sophos | Fast lenke til Sophos' side, `observedStatus` ved feil (B10). |
+| Leverandørstatus er manuell til automatikken (7.1) finnes | Microsoft-statusen kan bli utdatert | 7.1 prioriteres som neste leveranse. |
 | GitHub Free: ingen håndhevet branch protection i private repoer | Direkte push til main mulig | Unntak i baseline (utløper 2027-01-15). Agenten pusher aldri til main. |
 | Sårbarheter i testverktøy (lhci-avhengigheter) | Kun i CI, ikke på nettsiden | Dependabot for `scripts/qa`, samme som nettstedet. |
 
 ## 9. Åpne spørsmål til Johannes
 
-1. **Godkjenne kildene** i avsnitt 5, særlig at Sophos bare lenkes og settes manuelt.
+1. ~~Godkjenne kildene, særlig Sophos.~~ **Besluttet (B10):** ingen manuell leverandørstatus; Sophos får fast lenke og bare «Registrert av NITD».
 2. **Uniweb**: én komponent «Uniweb (webhotell og e-post)» som i oppgaven, eller to?
    Forslag: én komponent, som viser den dårligste av Uniwebs «Web hosting» og «E-mail».
 3. **Zyxel**: holder det at komponenten gjelder Nebula, eller skal den hete «Zyxel Nebula»?
