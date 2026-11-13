@@ -327,8 +327,8 @@ godkjent.** Minimumskrav:
    Johannes registrerer unntak for ACT-02 og automerge i `baseline.yaml`.
 8. ~~Daglig bygg.~~ **Besluttet (B17):** hver time.
 9. ~~Speil hos annen leverandør.~~ **Besluttet:** ikke aktuelt. Cloudflare-avhengigheten aksepteres.
-10. **Startdata**: skal Microsoft-hendelsen fra 12.–13. nov. ligge med som første
-    hendelse (sporbarhet), eller starter vi tomt?
+10. ~~Startdata.~~ **Besluttet:** Microsoft-hendelsen fra 12.–13. nov. blir liggende som
+    første hendelse. Den oppdateres eller avsluttes før merge.
 
 11. ~~Kundeportal og leverandørstatus.~~ **Besluttet (B11):** automatisk, uten navn og lenke.
 12. ~~Forbudte ord.~~ **Besluttet:** generiske navn på siden («helpdesksystemet» o.l.), navneliste
