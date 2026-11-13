@@ -376,3 +376,17 @@ test("cache: stilark og skript har innholdshash i filnavnet, og HTML peker på d
   assert.match(h, /\/css\/\*\n  Cache-Control: public, max-age=31536000, immutable/);
   assert.match(h, /\n\/\n  Cache-Control: no-cache/);
 });
+
+// Kontrakt med banneret på norskitdrift.no (B26). Endres bare etter avtale med Johannes.
+test("kontrakt: /status.json har feltene banneret på norskitdrift.no bruker, og åpen CORS", () => {
+  const r = runBuild(baseStatus(), { "2026-11-01-test.json": incident({ status: "handteres", resolved: null }) },
+    undefined, { microsoft: { state: "degraded", fetched: "2026-11-13T11:55:00Z" } });
+  const json = JSON.parse(readFileSync(join(r.outDir, "status.json"), "utf8"));
+  assert.ok(["operational", "recovering", "degraded", "outage"].includes(json.overall.state));
+  assert.equal(json.overall.state, "degraded");
+  assert.ok(Array.isArray(json.active) && json.active.length === 1);
+  assert.equal(json.active[0].type, "hendelse");
+  assert.equal(json.active[0].title, "Test");
+  const h = readFileSync(join(ROOT, "src", "_headers"), "utf8");
+  assert.match(h, /\/status\.json\n(  .+\n)*  Access-Control-Allow-Origin: \*/);
+});
