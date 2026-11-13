@@ -37,6 +37,12 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
   Claude arbeider bare med koden til siden, og bare når Johannes ber om det.
 - Leverandørens egne meldinger skrives ikke av i hendelsesloggen. Kortet og lenken viser dem.
 
+## Kontrakt med norskitdrift.no (B26)
+
+Banneret på norskitdrift.no leser `/status.json`. Ikke endre eller fjern `overall.state`,
+`active[].type`, `active[].title` eller CORS-headeren på `/status.json` uten avtale med Johannes.
+Nye felt kan legges til. Testen «kontrakt» i `scripts/test.mjs` skal aldri svekkes.
+
 ## Selvgående avslutning (B24)
 
 - Hendelse med `"autoResolve": "microsoft"` (eller annen kilde) vises som løst når leverandøren melder normal drift.
