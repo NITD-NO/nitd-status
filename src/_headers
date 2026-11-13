@@ -10,8 +10,31 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
 
+# Fonter, stilark og skript har faste eller hashede filnavn og kan caches lenge.
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML skal alltid kontrolleres mot serveren, så nye bygg vises med en gang.
+/
+  Cache-Control: no-cache
+
+/*.html
+  Cache-Control: no-cache
+
+/arkiv
+  Cache-Control: no-cache
+
+/hendelser/*
+  Cache-Control: no-cache
+
+/feed.xml
+  Cache-Control: no-cache
 
 /versjon.json
   Cache-Control: no-store

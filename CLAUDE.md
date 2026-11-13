@@ -37,7 +37,15 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
   Claude arbeider bare med koden til siden, og bare når Johannes ber om det.
 - Leverandørens egne meldinger skrives ikke av i hendelsesloggen. Kortet og lenken viser dem.
 
+## Selvgående avslutning (B24)
+
+- Hendelse med `"autoResolve": "microsoft"` (eller annen kilde) vises som løst når leverandøren melder normal drift.
+- NITD-merknad med `"clearWhen": "<kilde>"` i `observedStatus` forsvinner samtidig.
+- `"messageClearWhen": "<kilde>"` i `status.json` skjuler meldingen øverst.
+- Kilden «Ukjent» (svarer ikke) avslutter ingenting.
+
 ## Regler for innhold
+- Skriv om tjenestene og hva kunden bør gjøre. Aldri om hvordan siden er laget, hentes eller oppdateres.
 - Rolig og konkret: hva som er berørt, hva kundene bør gjøre og når neste oppdatering kommer (`nextUpdate`).
 - Ingen kundenavn, personopplysninger, interne systemnavn eller verktøynavn. Skriv «Overvåking», «Kundeportal» og «helpdesksystemet», ikke verktøyets navn.
   Bygget stopper på ord i `config/forbudte-ord.txt`, e-post/telefon som ikke er NITDs, hemmeligheter, IP-adresser,

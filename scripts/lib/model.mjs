@@ -151,11 +151,18 @@ function checkText(c, where, field, value, { required = false, forbidden = [] } 
   }
 }
 
+// Leverandørkilde som avslutter noe automatisk når leverandøren melder normal drift (B24).
+function checkFeed(c, where, field, value) {
+  if (value == null) return;
+  if (!FEED_NAMES.includes(value)) c.error(where, `«${field}» må være en av ${FEED_NAMES.join(", ")}`);
+}
+
 function checkStatusField(c, where, field, s, forbidden, { vendor = false } = {}) {
   if (s == null) return;
   if (!isObj(s)) { c.error(where, `«${field}» må være et objekt eller null`); return; }
   if (!STATES.includes(s.state)) c.error(where, `«${field}.state» må være en av ${STATES.join(", ")}`);
   checkText(c, where, `${field}.note`, s.note, { forbidden });
+  checkFeed(c, where, `${field}.clearWhen`, s.clearWhen);
   checkTime(c, where, `${field}.updated`, s.updated, true);
   if (vendor) {
     checkUrl(c, where, `${field}.url`, s.url, true);
@@ -172,6 +179,7 @@ export function validateStatus(status, c, forbidden) {
   if (!isObj(status)) { c.error(where, "må være et objekt"); return components; }
   checkTime(c, where, "updated", status.updated, true);
   checkText(c, where, "message", status.message, { forbidden });
+  checkFeed(c, where, "messageClearWhen", status.messageClearWhen);
   if (!Array.isArray(status.groups) || status.groups.length === 0) {
     c.error(where, "«groups» må være en liste med minst én gruppe");
     return components;
@@ -247,6 +255,8 @@ export function validateIncident(id, inc, components, c, forbidden) {
   if (!closed && inc.resolved) c.error(where, "«resolved» er satt, men status er ikke avsluttet");
   if (inc.started && inc.resolved && Date.parse(inc.resolved) < Date.parse(inc.started)) c.error(where, "«resolved» er før «started»");
   checkTime(c, where, "nextUpdate", inc.nextUpdate, false);
+  checkFeed(c, where, "autoResolve", inc.autoResolve);
+  if (inc.autoResolve && inc.type !== "hendelse") c.error(where, "«autoResolve» gjelder bare hendelser");
 
   const start = inc.type === "hendelse" ? inc.started : inc.scheduledStart;
   if (m && start && ISO_WITH_ZONE.test(start) && osloDate(start) !== m[1]) {
