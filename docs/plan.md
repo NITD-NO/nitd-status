@@ -22,6 +22,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B7 | «Registrert av NITD» (`observedStatus`) publiseres **alltid manuelt**, etter en vurdering. Aldri automatisk fra målinger. | Egne målinger kan gi feil alarm. En feil rød status svekker tilliten mer enn en litt sen gul. |
 | B8 | Hendelser slettes aldri. Avsluttede hendelser vises i arkivet i 90 dager. Eldre filer blir liggende i `data/hendelser/` (og i git-historikken), men publiseres ikke. | Sporbarhet for ISO 27001 og NIS2. |
 | B10 | **Ingen manuelt vedlikehold av leverandørstatus.** `vendorStatus` settes bare automatisk fra offentlige, maskinlesbare kilder (7.1). Har leverandøren ingen slik kilde, er `vendorStatus` alltid `null`, og siden viser en fast lenke til leverandørens egen statusside. Besluttet av Johannes 13. nov. 2026. | Statussiden skal være sannhetskilden og ikke kreve vedlikehold. En manuell kopi av leverandørens status blir fort utdatert. |
+| B11 | **Kundeportal** får `vendorStatus` automatisk fra leverandørens offentlige feed, men vises **uten leverandørnavn og uten lenke** («Meldt av leverandør»). Modellen får `vendor.public: false` for dette. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, og ingen verktøynavn på siden. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -198,7 +199,7 @@ Verifisert 13. nov. 2026 fra skymiljø, uten innlogging. Detaljer i README.
 | Microsoft 365 | `https://status.cloud.microsoft/api/posts/mac` og `/api/feed/mac` | JSON og RSS | **Verifisert.** Tider i UTC. Feeden har tittel, status («Service degradation» o.l.), tekst og «Next update by» i UTC, men **ikke** referansen (f.eks. `MO1550821`). Referansen hentes fra Microsoft 365 admin center og legges inn manuelt. |
 | Uniweb | `https://status.uniweb.no` (Atlassian Statuspage): `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | **Verifisert.** Har egne komponenter for «Web hosting» og «E-mail» (med underkomponenter). Tidssone Europe/Amsterdam. |
 | Zyxel | `https://www.nebulastatus.zyxel.com` (Atlassian Statuspage): `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | **Verifisert.** Gjelder bare Nebula (skytjenesten). Ikke brannmurer uten Nebula, firmware eller sårbarheter. Uten `www.` svarer adressen ikke. |
-| Kundeportalen (HaloPSA, intern kilde) | `https://status.haloservicesolutions.com` (status.io), RSS: `/pages/63ef45da7ee94905308a1a4a/rss` | RSS | **Verifisert.** Kundeportalen kjører på HaloPSA. Verktøynavnet skal ikke stå på siden, så kilden brukes **bare internt** som grunnlag for `observedStatus` på «Kundeportal». Ingen lenke dit fra siden. Se åpent spørsmål 11. |
+| Kundeportalen (HaloPSA, intern kilde) | `https://status.haloservicesolutions.com` (status.io), RSS: `/pages/63ef45da7ee94905308a1a4a/rss` | RSS | **Verifisert.** Kundeportalen kjører på HaloPSA. Verktøynavnet skal ikke stå på siden. Etter B11: brukes automatisk som `vendorStatus` på «Kundeportal», vist uten navn og lenke. |
 | Sophos | `https://status.sophos.com` (oppgitt som offisiell statusside i Sophos' egen dokumentasjon) | Ukjent | **Ikke verifisert maskinelt.** Siden svarer 403 «Invalid request blocked» på automatiske kall fra skymiljøet. Vi omgår ikke sperren. Etter B10: `vendorStatus` er alltid `null`, siden viser fast lenke til status.sophos.com, og `observedStatus` settes bare når NITD ser en feil. Sophos Notification Service (SMS/e-post til enkeltpersoner, med reCAPTCHA) brukes ikke som kilde. Senere: test om siden svarer fra GitHub Actions med vanlige kall; gjør den det, tas den med i 7.1. |
 
 Ikke brukt: Downdetector, StatusGator, isdown.app og lignende (tredjepart, skraping
@@ -293,9 +294,7 @@ godkjent.** Minimumskrav:
 10. **Startdata**: skal Microsoft-hendelsen fra 12.–13. nov. ligge med som første
     hendelse (sporbarhet), eller starter vi tomt?
 
-11. **Kundeportal og leverandørstatus**: kundeportalen er HaloPSA. Forslag: komponenten
-    står under «Egne tjenester» med `vendorStatus: null`, og HaloPSA-feeden brukes bare
-    internt. Alternativ: vise «Meldt av leverandør» uten navn og lenke. Hva foretrekker du?
+11. ~~Kundeportal og leverandørstatus.~~ **Besluttet (B11):** automatisk, uten navn og lenke.
 12. **Forbudte ord**: hvilke interne system- og verktøynavn skal i `config/forbudte-ord.txt`
     (i dag bare «HaloPSA»)? Navnet på overvåkingsverktøyet bør inn.
 13. **Microsoft-referanser**: feeden mangler MO/EX-nummer. Skal vi vise referansen (krever
