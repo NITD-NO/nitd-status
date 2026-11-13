@@ -1,0 +1,24 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "scripts/qa/node_modules/.bin/serve dist -l 8080",
+      "startServerReadyPattern": "Accepting connections",
+      "numberOfRuns": 2,
+      "url": [
+        "http://localhost:8080/index.html",
+        "http://localhost:8080/arkiv.html",
+        "http://localhost:8080/hendelser/2026-11-12-microsoft-365-e-post.html"
+      ],
+      "settings": { "preset": "desktop", "chromeFlags": "--headless=new --no-sandbox" }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 1 }],
+        "categories:best-practices": ["warn", { "minScore": 0.95 }],
+        "categories:seo": ["warn", { "minScore": 0.95 }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": "qa-report/lighthouse" }
+  }
+}

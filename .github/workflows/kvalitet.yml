@@ -1,0 +1,77 @@
+# Kvalitetssjekk: universell utforming (axe, WCAG 2.2 AA, lyst + mørkt tema) og Lighthouse.
+# Samme oppsett som norskitdrift.no. Verktøyene er låst i scripts/qa/package-lock.json (ingen npx).
+# UU: alvorlige brudd (critical/serious) stopper PR-en. Lighthouse: UU under 100 stopper, resten er advarsel.
+name: Kvalitet (UU + Lighthouse)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kvalitet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AXE_FAIL_ON: "critical,serious"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/qa/package-lock.json
+
+      - name: Bygg
+        run: node scripts/build.mjs
+
+      # Feiler installasjonen, skal ingen ukjente pakker kjøres.
+      - name: Installer testverktøy (låste versjoner)
+        id: verktoy
+        run: |
+          npm ci --prefix scripts/qa
+          scripts/qa/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: UU-skanning (axe)
+        run: |
+          scripts/qa/node_modules/.bin/serve dist -l 8080 > /tmp/serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:8080/index.html && break; sleep 1; done
+          curl -sf -o /dev/null http://localhost:8080/index.html
+          node scripts/qa/axe-scan.mjs http://localhost:8080
+
+      - name: Lighthouse
+        if: always() && steps.verktoy.outcome == 'success'
+        run: |
+          pkill -f "serve dist" || true
+          scripts/qa/node_modules/.bin/lhci autorun --config=scripts/qa/lighthouserc.json
+
+      - name: Lighthouse-sammendrag
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs"); const p = "qa-report/lighthouse/manifest.json";
+            if (!fs.existsSync(p)) process.exit(0);
+            const runs = JSON.parse(fs.readFileSync(p)).filter(r => r.isRepresentativeRun);
+            const pct = v => v == null ? "–" : Math.round(v * 100);
+            let md = "\n## Lighthouse (desktop, representativ kjøring)\n\n| Side | Ytelse | UU | Beste praksis | SEO |\n|---|---|---|---|---|\n";
+            for (const r of runs) { const s = r.summary; md += `| ${r.url.replace("http://localhost:8080","")} | ${pct(s.performance)} | ${pct(s.accessibility)} | ${pct(s["best-practices"])} | ${pct(s.seo)} |\n`; }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md); console.log(md);
+          '
+
+      - name: Last opp rapport
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kvalitetsrapport
+          path: qa-report/
+          retention-days: 30

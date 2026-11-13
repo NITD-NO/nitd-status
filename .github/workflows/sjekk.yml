@@ -1,0 +1,30 @@
+# Påkrevd statussjekk (baseline ACT-08/BRA-03): validering av data, tester og bygg.
+name: sjekk
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sjekk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sjekk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Valider, test og bygg
+        run: scripts/sjekk.sh

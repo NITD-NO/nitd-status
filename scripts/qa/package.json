@@ -1,0 +1,15 @@
+{
+  "name": "nitd-status-qa",
+  "private": true,
+  "description": "Låste testverktøy for kvalitetssjekken (axe og Lighthouse). Installeres med npm ci i CI. overrides løfter sårbare underavhengigheter (serve → compression, lhci → basic-ftp) til rettede versjoner i samme hovedversjon.",
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@lhci/cli": "0.16.0",
+    "playwright": "1.65.0",
+    "serve": "14.2.6"
+  },
+  "overrides": {
+    "compression": "1.8.2",
+    "basic-ftp": "6.2.6"
+  }
+}

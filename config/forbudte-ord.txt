@@ -1,0 +1,8 @@
+# Navn som ikke skal stå i publisert tekst: verktøy, interne systemer og kunder.
+# Ett ord eller uttrykk per linje. Store/små bokstaver ignoreres. Fila publiseres ikke.
+#
+# På siden brukes generiske navn: «Kundeportal», «Overvåking» og «helpdesksystemet».
+# Hemmeligheter, IP-adresser, interne vertsnavn og ukjente domener stoppes uansett
+# av valideringen (scripts/lib/model.mjs). Listen her er for egennavn.
+HaloPSA
+Halo PSA

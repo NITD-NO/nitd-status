@@ -1,0 +1,75 @@
+{
+  "updated": "2026-11-13T10:20:00+01:00",
+  "message": "Forstyrrelser i Microsoft 365. E-post kan være forsinket eller utilgjengelig. Ring oss på 69 81 10 00 ved henvendelser.",
+  "groups": [
+    {
+      "id": "egne",
+      "name": "Egne tjenester",
+      "components": [
+        {
+          "id": "helpdesk",
+          "name": "Helpdesk og telefon",
+          "description": "Telefon, e-post og saker til Norsk IT Drift.",
+          "vendorStatus": null,
+          "observedStatus": {
+            "state": "degraded",
+            "note": "Telefon fungerer normalt. E-post til helpdesk er påvirket av feilen hos Microsoft. Ring oss på 69 81 10 00.",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
+        },
+        {
+          "id": "kundeportal",
+          "name": "Kundeportal",
+          "description": "Saker og oversikt på kundeportal.nitd.no.",
+          "vendorStatus": null,
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
+        },
+        {
+          "id": "overvaking",
+          "name": "Overvåking",
+          "description": "Døgnkontinuerlig overvåking av kundenes systemer.",
+          "vendorStatus": null,
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "leverandorer",
+      "name": "Leverandører",
+      "components": [
+        {
+          "id": "microsoft-365",
+          "name": "Microsoft 365",
+          "description": "E-post (Exchange Online), Teams, SharePoint og OneDrive.",
+          "vendor": {
+            "name": "Microsoft",
+            "statusUrl": "https://status.cloud.microsoft/"
+          },
+          "vendorStatus": {
+            "state": "degraded",
+            "note": "Microsoft ser de første tegnene til stabilisering, men kapasiteten er ikke tilbake på normalt nivå. Forsinket e-post holdes nå i opptil 48 timer, slik at den ikke går tapt.",
+            "refs": [
+              "MO1550821",
+              "EX1550543"
+            ],
+            "url": "https://status.cloud.microsoft/",
+            "updated": "2026-11-13T09:14:20Z"
+          },
+          "observedStatus": {
+            "state": "degraded",
+            "note": "Vi ser problemer med Outlook og e-post hos flere kunder.",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
+        }
+      ]
+    }
+  ]
+}
