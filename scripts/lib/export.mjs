@@ -19,7 +19,7 @@ function rows(status) {
       note: c.observedStatus?.state !== "operational" ? c.observedStatus?.note || null : null,
       vendor: shown ? c.vendor.name : null,
       vendorStatusUrl: shown ? c.vendor.statusUrl || null : null,
-      vendorFetched: c.vendorStatus?.fetched || null,
+      vendorSince: c.vendorStatus?.since || null,
     });
   }
   return out;
@@ -61,8 +61,8 @@ export function renderStatusCsv({ status }) {
   const fmt = iso => iso ? new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Oslo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
   }).format(new Date(iso)) : "";
-  const header = ["Gruppe", "Tjeneste", "Status", "Kilde", "Merknad", "Leverandør", "Leverandørens statusside", "Hentet (norsk tid)"];
-  const lines = [header, ...rows(status).map(r => [r.group, r.name, r.label, r.source, r.note, r.vendor, r.vendorStatusUrl, fmt(r.vendorFetched)])];
+  const header = ["Gruppe", "Tjeneste", "Status", "Kilde", "Merknad", "Leverandør", "Leverandørens statusside", "Endret (norsk tid)"];
+  const lines = [header, ...rows(status).map(r => [r.group, r.name, r.label, r.source, r.note, r.vendor, r.vendorStatusUrl, fmt(r.vendorSince)])];
   // Semikolon og BOM gjør at norsk Excel åpner fila riktig.
   return "﻿" + lines.map(l => l.map(cell).join(";")).join("\r\n") + "\r\n";
 }

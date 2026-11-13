@@ -1,0 +1,85 @@
+# Leverandørstatus (B27): henter status fra Microsoft, Uniweb, Zyxel og kundeportalen hvert
+# 10. minutt og oppdaterer bare vendorStatus i data/status.json. Ingen KI, ingen tokens,
+# ingen secrets. Bare GITHUB_TOKEN med minste nødvendige tilgang.
+#
+# Ingen endring        → ingen commit.
+# Vakt og sjekk grønne → commit direkte til main (unntak BRA-01 i nitd-repo-standard).
+# Vakt eller sjekk røde → PR til Johannes (unntak ACT-02). Kan ikke PR lages, feiler jobben.
+# main endres aldri uten at vakten og scripts/sjekk.sh er grønne.
+name: Leverandørstatus
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: leverandorstatus
+  cancel-in-progress: false
+
+jobs:
+  hent:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # commit av data/status.json
+      pull-requests: write   # reserve-PR når vakten stopper
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 200    # nok historikk til å telle automatiske commits siste døgn
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Hent leverandørstatus
+        id: hent
+        run: node scripts/hent-leverandorstatus.mjs
+
+      - name: Vakt og sjekk
+        id: vakt
+        if: steps.hent.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          node scripts/vakt.mjs
+          scripts/sjekk.sh
+
+      - name: Commit til main
+        if: steps.hent.outputs.changed == 'true' && steps.vakt.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUMMARY: ${{ steps.hent.outputs.summary }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/status.json
+          git commit -m "Leverandørstatus: $SUMMARY"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+
+      - name: PR når vakten stopper
+        if: steps.hent.outputs.changed == 'true' && steps.vakt.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUMMARY: ${{ steps.hent.outputs.summary }}
+        run: |
+          # Bare én åpen reserve-PR om gangen, så flapping ikke gir mange PR-er.
+          if [ "$(gh pr list --state open --search 'head:auto/leverandorstatus' --json number --jq length)" != "0" ]; then
+            echo "::error::Vakten stoppet automatisk commit, og det finnes allerede en åpen PR. Ingen ny PR."
+            exit 1
+          fi
+          BRANCH="auto/leverandorstatus-$(date -u +%Y%m%d-%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add data/status.json
+          git commit -m "Leverandørstatus: $SUMMARY"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Leverandørstatus: vakten stoppet automatisk oppdatering" \
+            --body "Jobben «Leverandørstatus» fant en endring, men vakten eller sjekken godkjente den ikke. Se jobbloggen for årsak. Endring: $SUMMARY"
+          echo "::warning::Vakten stoppet automatisk commit. PR er laget for gjennomgang."

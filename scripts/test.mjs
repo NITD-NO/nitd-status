@@ -190,7 +190,7 @@ test("bygg: planlagt vedlikehold vises på forsiden og i feeden", () => {
 
 test("bygg: tekst escapes, og hentet leverandørstatus vises på kortet med lenke", () => {
   const s = baseStatus({ message: "Test & <prøve>" });
-  const vendors = { microsoft: { state: "outage", fetched: "2026-11-13T11:55:00Z" } };
+  const vendors = { microsoft: { state: "outage", since: "2026-11-13T11:55:00Z" } };
   const r = runBuild(s, {}, undefined, vendors);
   // «<» i tekst er ikke tillatt (HTML-sjekk), men & og > skal escapes.
   assert.equal(r.ok, false);
@@ -200,7 +200,7 @@ test("bygg: tekst escapes, og hentet leverandørstatus vises på kortet med lenk
   const index = readFileSync(join(r2.outDir, "index.html"), "utf8");
   assert.match(index, /Test &amp; prøve &gt; alt/);
   assert.match(index, /Microsoft melder driftsavbrudd\./);
-  assert.match(index, /Kontrollert <time[^>]*>13\. nov\. kl\. 12:55/);
+  assert.match(index, /Sist endret <time[^>]*>13\. nov\. kl\. 12:55/);
   assert.match(index, /href="https:\/\/status\.cloud\.microsoft\/">Statusside hos Microsoft/);
   assert.match(index, /<span>Driftsavbrudd<\/span>/);
   assert.doesNotMatch(index, /Registrert av NITD|NITD registrerer/);
@@ -214,20 +214,20 @@ test("bygg: leverandør som ikke svarer gir «Ukjent», ikke feil samlet status"
   assert.match(index, /Alle tjenester fungerer normalt/);
 });
 
-test("validering: «vendorStatus» kan ikke settes for hånd, og skjult leverandør har ikke lenke", () => {
+test("validering: «vendorStatus» har bare state og since, og skjult leverandør har ikke lenke", () => {
   const s = baseStatus();
-  s.groups[1].components[0].vendorStatus = { state: "outage" };
+  s.groups[1].components[0].vendorStatus = { state: "outage", since: T, note: "fritekst" };
   s.groups[0].components[0].vendor = { name: "X", public: false, statusUrl: "https://status.uniweb.no/" };
   const r = runBuild(s, {});
   assert.equal(r.ok, false);
-  assert.match(r.errors.join("\n"), /settes ikke for hånd/);
+  assert.match(r.errors.join("\n"), /ukjente felt: note/);
   assert.match(r.errors.join("\n"), /skal ikke settes når «vendor.public» er false/);
 });
 
 test("eksport: status.json og status.csv har gjeldende status, og CSV er trygg i Excel", () => {
   const s = baseStatus();
   s.groups[0].components[0].observedStatus = { state: "degraded", note: "-Telefonen er treg", updated: T };
-  const r = runBuild(s, {}, undefined, { microsoft: { state: "operational", fetched: "2026-11-13T11:55:00Z" } });
+  const r = runBuild(s, {}, undefined, { microsoft: { state: "operational", since: "2026-11-13T11:55:00Z" } });
   const json = JSON.parse(readFileSync(join(r.outDir, "status.json"), "utf8"));
   assert.equal(json.overall.state, "degraded");
   const hd = json.components.find(c => c.id === "helpdesk");
@@ -322,7 +322,7 @@ test("selvgående: hendelse, merknad og melding avsluttes når leverandøren mel
     vendorRefs: [{ vendor: "Microsoft", ref: "MO1", url: "https://status.cloud.microsoft/" }] });
   const files = { "2026-11-01-test.json": inc };
   const at = (state, now = "2026-11-03T12:00:00Z") =>
-    runBuild(s, files, new Date(now), { microsoft: { state, fetched: now } });
+    runBuild(s, files, new Date(now), { microsoft: { state, since: now } });
 
   const pagaende = at("degraded");
   let index = readFileSync(join(pagaende.outDir, "index.html"), "utf8");
@@ -380,7 +380,7 @@ test("cache: stilark og skript har innholdshash i filnavnet, og HTML peker på d
 // Kontrakt med banneret på norskitdrift.no (B26). Endres bare etter avtale med Johannes.
 test("kontrakt: /status.json har feltene banneret på norskitdrift.no bruker, og åpen CORS", () => {
   const r = runBuild(baseStatus(), { "2026-11-01-test.json": incident({ status: "handteres", resolved: null }) },
-    undefined, { microsoft: { state: "degraded", fetched: "2026-11-13T11:55:00Z" } });
+    undefined, { microsoft: { state: "degraded", since: "2026-11-13T11:55:00Z" } });
   const json = JSON.parse(readFileSync(join(r.outDir, "status.json"), "utf8"));
   assert.ok(["operational", "recovering", "degraded", "outage"].includes(json.overall.state));
   assert.equal(json.overall.state, "degraded");
@@ -389,4 +389,81 @@ test("kontrakt: /status.json har feltene banneret på norskitdrift.no bruker, og
   assert.equal(json.active[0].title, "Test");
   const h = readFileSync(join(ROOT, "src", "_headers"), "utf8");
   assert.match(h, /\/status\.json\n(  .+\n)*  Access-Control-Allow-Origin: \*/);
+});
+
+// Jobben «Leverandørstatus» (B27)
+import { oppdater, oppsummer } from "./lib/hent.mjs";
+import { sjekkEndring } from "./lib/vakt.mjs";
+
+function feedStatus() {
+  const s = baseStatus();
+  s.groups[1].components[0].vendorStatus = { state: "operational", since: T };
+  return s;
+}
+const stille = { log() {}, warn() {} };
+const svar = (...runder) => { let i = 0; return async () => runder[Math.min(i++, runder.length - 1)]; };
+
+test("hent: ingen endring gir ingen endring og ingen bekreftelseskall", async () => {
+  let kall = 0;
+  const s = feedStatus();
+  const changes = await oppdater({ status: s, fetchStates: async () => { kall++; return { microsoft: "operational" }; },
+    recheckMs: 0, sleep: async () => {}, log: stille });
+  assert.deepEqual(changes, []);
+  assert.equal(kall, 1);
+});
+
+test("hent: endring godtas bare når to kall gir samme svar (mot feil alarm)", async () => {
+  const s = feedStatus();
+  let changes = await oppdater({ status: s, fetchStates: svar({ microsoft: "outage" }, { microsoft: "operational" }),
+    recheckMs: 0, sleep: async () => {}, log: stille });
+  assert.deepEqual(changes, []);
+  assert.equal(s.groups[1].components[0].vendorStatus.state, "operational");
+
+  changes = await oppdater({ status: s, fetchStates: svar({ microsoft: "degraded" }, { microsoft: "degraded" }),
+    recheckMs: 0, sleep: async () => {}, now: () => new Date("2026-11-13T12:00:00Z"), log: stille });
+  assert.equal(changes.length, 1);
+  assert.deepEqual(s.groups[1].components[0].vendorStatus, { state: "degraded", since: "2026-11-13T12:00:00.000Z" });
+  assert.equal(oppsummer(changes), "Microsoft 365: Normal → Redusert");
+});
+
+test("hent: kilde nede to ganger gir «Ukjent», aldri «Normal»", async () => {
+  const s = feedStatus();
+  s.groups[1].components[0].vendorStatus.state = "outage";
+  const changes = await oppdater({ status: s, fetchStates: svar({ microsoft: "unknown" }, { microsoft: "unknown" }),
+    recheckMs: 0, sleep: async () => {}, log: stille });
+  assert.equal(changes[0].to, "unknown");
+  assert.equal(s.groups[1].components[0].vendorStatus.state, "unknown");
+});
+
+test("vakt: godkjenner bare endringer i vendorStatus", () => {
+  const before = feedStatus();
+  const after = feedStatus();
+  after.groups[1].components[0].vendorStatus = { state: "degraded", since: "2026-11-13T12:00:00.000Z" };
+  assert.deepEqual(sjekkEndring(JSON.stringify(before), JSON.stringify(after)), []);
+
+  const tekst = feedStatus(); tekst.message = "Endret tekst";
+  assert.match(sjekkEndring(JSON.stringify(before), JSON.stringify(tekst)).join(), /Andre felt enn vendorStatus/);
+
+  const obs = feedStatus(); obs.groups[0].components[0].observedStatus.state = "outage";
+  assert.match(sjekkEndring(JSON.stringify(before), JSON.stringify(obs)).join(), /Andre felt enn vendorStatus/);
+
+  const ugyldig = feedStatus(); ugyldig.groups[1].components[0].vendorStatus = { state: "rød", since: "i går", note: "x" };
+  const feil = sjekkEndring(JSON.stringify(before), JSON.stringify(ugyldig)).join("\n");
+  assert.match(feil, /ugyldig tilstand/);
+  assert.match(feil, /ugyldig «since»/);
+  assert.match(feil, /ukjente felt/);
+
+  assert.match(sjekkEndring("{", "{}").join(), /kan ikke leses/);
+});
+
+test("workflow: minste tilgang, ingen secrets, og main endres bare etter vakt og sjekk", () => {
+  const wf = readFileSync(join(ROOT, ".github", "workflows", "leverandorstatus.yml"), "utf8");
+  assert.match(wf, /^permissions: \{\}$/m);
+  assert.match(wf, /contents: write/);
+  assert.match(wf, /pull-requests: write/);
+  assert.doesNotMatch(wf, /\$\{\{\s*secrets\./);
+  assert.doesNotMatch(wf, /pull_request_target|actions: write|id-token/);
+  assert.match(wf, /if: steps\.hent\.outputs\.changed == 'true' && steps\.vakt\.outcome == 'success'/);
+  assert.match(wf, /node scripts\/vakt\.mjs\n\s+scripts\/sjekk\.sh/);
+  assert.match(wf, /persist-credentials: false/);
 });

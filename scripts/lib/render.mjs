@@ -198,7 +198,7 @@ function componentCard(comp) {
     lines.push(`<p class="meta">Status fra ${esc(vendor.name)} kan ikke vises nå. Se ${esc(vendor.name)}s statusside.</p>`);
   }
   const foot = [];
-  if (v && v.state !== "unknown") foot.push(`Kontrollert ${time(v.fetched, { year: false })}`);
+  if (v && v.state !== "unknown" && v.since) foot.push(`Sist endret ${time(v.since, { year: false })}`);
   if (shown && vendor.statusUrl) foot.push(`<a href="${esc(vendor.statusUrl)}">Statusside hos ${esc(vendor.name)}</a>`);
   return `<li class="component component--${state}">
           <div class="component-head">

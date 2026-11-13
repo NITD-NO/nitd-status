@@ -21,7 +21,9 @@ Cloudflare Pages: build-kommando `node scripts/build.mjs`, output `dist`, produk
 | Sti | Innhold |
 |---|---|
 | `data/status.json` | Komponenter, NITDs vurdering (`observedStatus`) og leverandørkilde (`vendor.feed`) |
-| `scripts/lib/vendors.mjs` | Henter leverandørstatus når siden bygges |
+| `scripts/lib/vendors.mjs` | Kildene og tolkningen av leverandørenes svar |
+| `scripts/hent-leverandorstatus.mjs`, `scripts/lib/hent.mjs` | Henter og bekrefter endringer (to like svar) |
+| `scripts/vakt.mjs`, `scripts/lib/vakt.mjs` | Godkjenner commit til `main` bare når bare `vendorStatus` er endret |
 | `data/hendelser/ÅÅÅÅ-MM-DD-navn.json` | Én fil per hendelse eller planlagt vedlikehold |
 | `config/forbudte-ord.txt` | Ord som ikke skal publiseres (verktøynavn o.l.). Publiseres ikke |
 | `src/` | CSS, JS, fonter, `_headers`, `robots.txt`, `security.txt`. Kopieres til `dist/` |
@@ -31,7 +33,8 @@ Cloudflare Pages: build-kommando `node scripts/build.mjs`, output `dist`, produk
 
 Publisert: `/`, `/hendelser/<id>`, `/arkiv`, `/feed.xml` (Atom), `/status.json`, `/status.csv` (Excel), `/versjon.json`.
 
-`node scripts/build.mjs` henter leverandørstatus over nett. `--offline` bygger uten nettkall (tester og CI).
+Leverandørstatus hentes av jobben «Leverandørstatus» (GitHub Actions, hvert 10. minutt) og lagres i
+`vendorStatus` i `data/status.json`. Bygget henter ingenting over nett.
 
 ## Leverandørkilder
 

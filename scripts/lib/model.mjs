@@ -210,8 +210,17 @@ export function validateStatus(status, c, forbidden) {
           if (v.public != null && typeof v.public !== "boolean") c.error(cw, "«vendor.public» må være true eller false");
         }
       }
-      if ("vendorStatus" in comp) {
-        c.error(cw, "«vendorStatus» settes ikke for hånd. Den hentes automatisk fra leverandøren (vendor.feed), se B10.");
+      // vendorStatus skrives bare av jobben «Leverandørstatus» (B27): { state, since }.
+      if (comp.vendorStatus != null) {
+        const vs = comp.vendorStatus;
+        if (!comp.vendor?.feed) c.error(cw, "«vendorStatus» krever «vendor.feed»");
+        if (!isObj(vs)) c.error(cw, "«vendorStatus» må være et objekt");
+        else {
+          if (![...STATES, "unknown"].includes(vs.state)) c.error(cw, "«vendorStatus.state» er ugyldig");
+          checkTime(c, cw, "vendorStatus.since", vs.since, true);
+          const extra = Object.keys(vs).filter(k => !["state", "since"].includes(k));
+          if (extra.length) c.error(cw, `«vendorStatus» har ukjente felt: ${extra.join(", ")}`);
+        }
       }
       if (!("observedStatus" in comp)) c.error(cw, "«observedStatus» mangler");
       checkStatusField(c, cw, "observedStatus", comp.observedStatus, forbidden);

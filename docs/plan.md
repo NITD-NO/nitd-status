@@ -31,13 +31,14 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B17 | **Jevnlig bygg** via Cloudflare deploy hook (7.3), og vedlikehold skifter status ut fra klokka. Besluttet «hver time»; satt til **annenhver time** fordi Cloudflare Pages Free har 500 bygg per måned (hver time ≈ 744). Hver time krever Pages Pro. Besluttet av Johannes 13. nov. 2026. | Arkiv og vedlikehold holder seg riktige uten vedlikehold. |
 | B18 | **Hendelsesstatus etter NSM og ISO:** Undersøkes, Håndteres, Overvåkes, Løst, og nytt felt `detected`. NIS2-klassifisering publiseres ikke. Komponentstatus (Normal, Bedring, Redusert, Nede) beholdes. Besluttet av Johannes 13. nov. 2026. | Kjente faser fra NSM 4.2–4.4 og ISO 27001 A.5.25–5.28 gir felles språk med revisjon og NIS2. |
 | B19 | **Komponenter uten maskinlesbar leverandørkilde** (Sophos) vises som «Normal» til NITD registrerer feil, med teksten «Leverandøren publiserer ikke maskinlesbar status» og lenke til leverandørens side. Besluttet av Johannes 13. nov. 2026. | «Normal» skal ikke se ut som en bekreftelse fra leverandøren. |
-| B20 | **Leverandørstatus hentes når siden bygges**, ikke via PR. Erstatter B16. Ingen workflow skriver til repoet. Besluttet 13. nov. 2026 etter innspill fra Johannes om at siden skal være vedlikeholdsfri. | Enklere og tryggere: ingen skrivetilgang for workflows, ingen unntak i baseline. |
+| B20 | **Erstattet av B27.** ~~Leverandørstatus hentes når siden bygges~~, ikke via PR. Erstatter B16. Ingen workflow skriver til repoet. Besluttet 13. nov. 2026 etter innspill fra Johannes om at siden skal være vedlikeholdsfri. | Enklere og tryggere: ingen skrivetilgang for workflows, ingen unntak i baseline. |
 | B21 | **Tjenestestatus som kort**, gruppert i «Norsk IT Drift» og «Leverandører», med navn, status og lenke til leverandørens statusside. Etiketten «Registrert av NITD» vises ikke. Leverandørens melding vises som «Microsoft melder …». Besluttet av Johannes 13. nov. 2026. | Saklig og oversiktlig. Det er opplagt at NITD står bak egne merknader. |
 | B22 | **Åpne data:** `/status.json` og `/status.csv` (Excel) med gjeldende status, i tillegg til Atom-feeden. CORS åpen, ingen personopplysninger. Besluttet av Johannes 13. nov. 2026. | Nettstedet og andre systemer kan vise status uten egen kopi. |
 | B23 | **Statusen endres bare av systemet i Cloudflare (leverandørstatus) og av NITD-ansatte (hendelser og egen vurdering).** Ingen API-tokens og ingen Claude-økter brukes til statusoppgaver. Leverandørens meldinger skrives ikke av i hendelsesloggen. Besluttet av Johannes 13. nov. 2026. | Driften av statussiden skal ikke avhenge av AI eller tokens. Mindre risiko, ingen løpende kostnad. |
 | B24 | **Selvgående avslutning:** en hendelse med `autoResolve: "<kilde>"` vises som løst, en NITD-merknad med `clearWhen` forsvinner og meldingen øverst med `messageClearWhen` skjules når leverandøren melder normal drift. «Ukjent» avslutter ingenting. Besluttet av Johannes 13. nov. 2026. | Tjenesten skal være autonom. Ingen trenger å rydde opp etter leverandørhendelser. |
 | B25 | **Cache:** stilark og skript får innholdshash i filnavnet og caches i ett år. HTML, feed og data sendes med `no-cache`. Besluttet 13. nov. 2026 etter at gammel versjon ble vist etter oppdatering. | Nettleser og Cloudflare kan aldri kombinere ny HTML med gamle filer. |
 | B26 | **Kontrakt med norskitdrift.no:** banneret leser `/status.json`. Feltene `overall.state`, `active[].type`, `active[].title` og CORS-headeren (`Access-Control-Allow-Origin: *`) endres eller fjernes ikke uten avtale med Johannes. Låst med test i `scripts/test.mjs`. Avtalt 13. nov. 2026. | Statussiden er den ene kilden til status (B9). |
+| B27 | **Leverandørstatus hentes av GitHub Actions hvert 10. minutt** og lagres i `vendorStatus` i `data/status.json`. Commit direkte til `main` bare når vakten og `sjekk.sh` er grønne, ellers PR. Ingen KI, ingen tokens, bare `GITHUB_TOKEN`. Erstatter B20. Besluttet av Johannes 13. nov. 2026. Se 7.1b. | Sporbar historikk i git, oppdatering hvert 10. minutt uavhengig av bygg. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -283,6 +284,70 @@ ikke via PR. Det erstatter PR- og automerge-løsningen i B16:
 - Ulempe: leverandørstatus lagres ikke i git. Historikken finnes hos leverandøren, og
   hendelser skrives som før i `data/hendelser/`.
 - Tester og CI bygger med `--offline` (ingen nettkall). Produksjonsbygget i Cloudflare henter.
+
+### 7.1b Henting av leverandørstatus i GitHub Actions (B27, forslag 13. nov. 2026)
+
+**Status: besluttet av Johannes 13. nov. 2026, bygget i `.github/workflows/leverandorstatus.yml`,
+`scripts/hent-leverandorstatus.mjs`, `scripts/lib/hent.mjs` og `scripts/vakt.mjs`.**
+
+Mål: leverandørstatus oppdateres hvert 10. minutt og lagres i repoet (sporbarhet), uten KI,
+uten tokens og uten at et menneske må gjøre noe.
+
+#### Flyt
+
+1. Planlagt workflow `leverandorstatus.yml` (`cron: */10 * * * *`) på `main`.
+2. Kjører den eksisterende hentingen (`scripts/lib/vendors.mjs`) for Microsoft, Uniweb,
+   Zyxel og kundeportalen. Ingen nye kilder, ingen nye avhengigheter.
+3. **Bekreftelse før endring:** avviker en tilstand fra lagret verdi, hentes kilden én gang til
+   etter 60 sekunder. Bare hvis begge svarene er like, regnes endringen som ekte.
+4. Skriver bare `vendorStatus` (`state`, `since`) i `data/status.json`. Ingen endring → ingen commit.
+5. **Vakt** (`scripts/vakt.mjs`) sammenligner før og etter. Den godkjenner bare hvis
+   - ingen andre filer er endret,
+   - ingen andre felt enn `vendorStatus` er endret,
+   - alle tilstander er gyldige,
+   - antall automatiske commits siste 24 timer er under grensen (forslag: 30),
+   - `scripts/sjekk.sh` er grønn (validering, tester, bygg).
+6. Vakt grønn → commit direkte til `main` som `github-actions[bot]`, med melding
+   «Leverandørstatus: Microsoft 365 Redusert → Normal». Cloudflare bygger på push.
+7. Vakt rød → branch `auto/leverandorstatus-<tid>` og PR til Johannes. Kan ikke PR lages,
+   feiler jobben (rød i Actions og e-post til eier). `main` endres aldri.
+
+#### Tilganger
+
+- Bare `GITHUB_TOKEN`: `contents: write` (commit) og `pull-requests: write` (reserve-PR),
+  satt på jobbnivå. Ingen secrets, ingen tredjeparts actions utover `actions/checkout`
+  og `actions/setup-node` (GitHub-eide, ACT-04).
+- `persist-credentials` brukes bare i steget som pusher.
+- `concurrency` hindrer to kjøringer samtidig.
+
+#### Risiko og trygg feil
+
+| Risiko | Konsekvens | Tiltak |
+|---|---|---|
+| Feil alarm (kortvarig feil i leverandørens API) | Kort vises rødt uten grunn | Bekreftelse med nytt kall etter 60 s. Ingen endring uten to like svar. |
+| Leverandør-API nede | Ingen ny status | To mislykkede kall → `unknown` («Kan ikke vises nå» med lenke). Avslutter aldri hendelser (B24). |
+| Leverandør endrer API-format | Feil tolkning | Ukjente verdier gir `unknown`, aldri `operational`. Advarsel i jobbloggen. |
+| Flapping (status veksler) | Mange commits og bygg (Pages Free: 500/mnd.) | Grense på 30 automatiske commits per døgn. Over grensen: PR i stedet for commit. |
+| Feil i vakten eller skriptet | Feil data på `main` | `sjekk.sh` må være grønn før push. Vakten har egne tester. Alt kan rulles tilbake med `git revert`. |
+| GitHub Actions forsinker planlagte jobber (vanlig: 5–30 min) | Status kommer senere | Kjent begrensning. Kortet viser tidspunktet for siste endring. |
+| `main` endres mens jobben kjører | Push avvises | Jobben feiler uten å endre noe, og neste kjøring prøver igjen. |
+| Mange reserve-PR-er ved flapping | Støy | Bare én åpen reserve-PR om gangen. Ellers feiler jobben. |
+
+#### Endringer i tidligere beslutninger
+
+- **B20** (henting ved bygg) erstattes: bygget leser lagret status og henter ikke selv.
+- **B10/validering:** `vendorStatus` i data blir tillatt, men bare med `state` og `since`.
+- **B17:** jevnlig bygg trengs bare for arkiv og vedlikehold. Redusert til 4 ganger per døgn.
+- **Baseline:** direkte commit til `main` fra workflow krever registrert unntak for BRA-01,
+  og reserve-PR krever unntak for ACT-02 og repo-innstillingen «Allow GitHub Actions to create
+  and approve pull requests». Registreres av Johannes i `nitd-repo-standard`.
+
+#### Besluttet (B27)
+
+14. Leverandørstatus lagres i `data/status.json` (ansatte skriver ikke i repoet, så kollisjon er ikke et problem).
+15. Henting ved bygg er fjernet. Bygget viser det som er lagret i repoet.
+16. Unntak for BRA-01 og ACT-02 er godkjent. Johannes registrerer dem i `nitd-repo-standard/baseline.yaml`
+    og slår på «Allow GitHub Actions to create and approve pull requests».
 
 ### 7.2 Sikkerhetsvarsler via webhook (Sophos, Zyxel, Microsoft)
 

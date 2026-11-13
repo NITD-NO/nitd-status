@@ -30,8 +30,11 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
 
 ## Hvem endrer statusen (B23, besluttet av Johannes 13. nov. 2026)
 
-- **Leverandørstatus** endres bare av systemet i Cloudflare: bygget henter offentlige kilder.
+- **Leverandørstatus** endres bare av jobben «Leverandørstatus» i GitHub Actions (B27), som henter
+  offentlige kilder hvert 10. minutt og skriver `vendorStatus` i `data/status.json`.
   Ingen API-tokens, ingen Claude-økter og ingen planlagte Claude-oppgaver brukes til dette.
+- Jobben committer direkte til `main` bare når `scripts/vakt.mjs` og `scripts/sjekk.sh` er grønne
+  (unntak BRA-01). Ellers lager den PR (unntak ACT-02). Ikke svekk vakten.
 - **Hendelser og NITDs vurdering** skrives av ansatte i NITD.
 - Claude skriver ikke statustekster, oppdaterer ikke hendelser og overvåker ikke leverandører.
   Claude arbeider bare med koden til siden, og bare når Johannes ber om det.
@@ -58,7 +61,7 @@ Nye felt kan legges til. Testen «kontrakt» i `scripts/test.mjs` skal aldri sve
   interne vertsnavn og domener som ikke er godkjent (`ALLOWED_DOMAINS` i `scripts/lib/model.mjs`).
 - Kontakt ved hendelse: telefon 69 81 10 00 (akutt: trykk 9), https://kundeportal.nitd.no og helpdesk@nitd.no. Alt havner i kundeportalen.
 - `observedStatus` (NITDs egen vurdering) settes alltid manuelt, aldri automatisk fra målinger.
-- Leverandørstatus hentes automatisk når siden bygges (`vendor.feed`, `scripts/lib/vendors.mjs`). Den settes aldri for hånd.
+- `vendorStatus` skrives bare av jobben «Leverandørstatus» (`vendor.feed`, `scripts/lib/vendors.mjs`). Aldri for hånd.
 - Språk: saklig og faglig, som i en SLA-rapport. Korte setninger, ingen muntlige uttrykk.
 - Tider lagres med tidssone (ISO 8601). Microsoft oppgir UTC. Siden viser norsk tid.
 - Hendelser slettes aldri. De arkiveres (vises i 90 dager, ligger i repoet etter det).
