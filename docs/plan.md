@@ -294,7 +294,7 @@ godkjent.** Minimumskrav:
 3. ~~Zyxel: navn.~~ **Besluttet (B13):** «Zyxel Nebula».
 4. ~~Akuttlinjen.~~ **Besluttet (B14):** alltid i kontaktboksen.
 5. ~~Helpdesk-e-post.~~ **Besluttet (B15):** alle tre kanaler vises.
-6. **Engelsk**: trengs en engelsk versjon eller oppsummering?
+6. ~~Engelsk.~~ **Besluttet:** bare norsk.
 7. **ACT-02** for automatisk PR fra workflow (7.1): unntak, eller skal Claude-økten lage PR-ene?
 8. **Daglig bygg** med deploy hook (7.3): ja/nei.
 9. **Speil hos annen leverandør** (risiko 1): når skal det vurderes?
