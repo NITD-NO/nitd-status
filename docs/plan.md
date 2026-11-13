@@ -334,8 +334,8 @@ godkjent.** Minimumskrav:
 12. ~~Forbudte ord.~~ **Besluttet:** generiske navn på siden («helpdesksystemet» o.l.), navneliste
     i `config/forbudte-ord.txt`, og mønstersjekk for hemmeligheter, IP-er, interne verter og
     ukjente domener. Johannes fyller på navnelisten ved behov.
-13. **Microsoft-referanser**: feeden mangler MO/EX-nummer. Skal vi vise referansen (krever
-    manuell innlegging fra admin center), eller bare lenke til Microsofts statusside?
+13. ~~Microsoft-referanser.~~ **Besluttet:** MO/EX-nummer bare i hendelsesfila (`vendorRefs`),
+    skrevet av den som lager hendelsen. Automatikken viser status og lenke uten nummer.
 
 ## 10. Oppgaver for Johannes (kan ikke gjøres av agenten)
 
