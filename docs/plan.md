@@ -26,6 +26,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B12 | **Uniweb vises som to komponenter:** «Webhotell (Uniweb)» = Uniwebs gruppe «Web hosting» + «Domains / DNS». «E-post (Uniweb)» = gruppen «E-mail» + «Domains / DNS». Hver viser den dårligste av sine underkomponenter. Besluttet av Johannes 13. nov. 2026. | Kunder med bare nettside eller bare e-post ser straks om de er berørt. DNS-feil rammer begge. |
 | B13 | Komponenten heter **«Zyxel Nebula»**. Leverandørstatus fra nebulastatus.zyxel.com. Feil på selve utstyret vises som «Registrert av NITD». Besluttet av Johannes 13. nov. 2026. | Navnet sier presist hva leverandørstatusen gjelder. |
 | B14 | **Akuttlinjen** («ring 69 81 10 00 og trykk 9» ved aktivt angrep eller akutt driftsstans) står alltid i kontaktboksen, med lenke til norskitdrift.no/under-angrep. Besluttet av Johannes 13. nov. 2026. | Fast tekst, ingen vedlikehold. Samme tilbud som på nettstedet. |
+| B15 | Kontaktboksen viser **telefon, kundeportal og helpdesk@nitd.no**. Alle henvendelser havner i kundeportalen. Besluttet av Johannes 13. nov. 2026. | Kunden velger kanal; telefon står først fordi e-post kan være nede ved feil hos Microsoft. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -292,8 +293,7 @@ godkjent.** Minimumskrav:
 2. ~~Uniweb: én eller to komponenter.~~ **Besluttet (B12):** to komponenter.
 3. ~~Zyxel: navn.~~ **Besluttet (B13):** «Zyxel Nebula».
 4. ~~Akuttlinjen.~~ **Besluttet (B14):** alltid i kontaktboksen.
-5. **Helpdesk-e-post**: skal `helpdesk@nitd.no` stå på siden, eller bare telefon og kundeportal
-   (som i oppgaven)? Utkastet bruker bare telefon og kundeportal.
+5. ~~Helpdesk-e-post.~~ **Besluttet (B15):** alle tre kanaler vises.
 6. **Engelsk**: trengs en engelsk versjon eller oppsummering?
 7. **ACT-02** for automatisk PR fra workflow (7.1): unntak, eller skal Claude-økten lage PR-ene?
 8. **Daglig bygg** med deploy hook (7.3): ja/nei.

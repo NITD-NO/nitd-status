@@ -4,6 +4,7 @@ import { STATE_LABEL, INCIDENT_STATUS, CLOSED, SOURCE_LABEL, RANK, STATES, effec
 export const SITE = "https://status.norskitdrift.no";
 export const PHONE = { text: "69 81 10 00", tel: "+4769811000" };
 export const PORTAL = "https://kundeportal.nitd.no";
+export const EMAIL = "helpdesk@nitd.no";
 
 export function esc(s) {
   return String(s ?? "")
@@ -92,7 +93,7 @@ ${body}
 function contactBlock() {
   return `<section class="card contact" aria-labelledby="kontakt-tittel">
       <h2 id="kontakt-tittel">Kontakt ved hendelse</h2>
-      <p>Ring <a class="phone" href="tel:${PHONE.tel}">${PHONE.text}</a> eller meld sak i <a href="${PORTAL}">kundeportalen</a>.</p>
+      <p>Ring <a class="phone" href="tel:${PHONE.tel}">${PHONE.text}</a>, meld sak i <a href="${PORTAL}">kundeportalen</a> eller send e-post til <a href="mailto:${EMAIL}">${EMAIL}</a>. Alle henvendelser havner i kundeportalen.</p>
       <p class="urgent"><strong>Ved aktivt angrep eller akutt driftsstans:</strong> ring ${PHONE.text} og trykk <strong>9</strong>. <a href="https://norskitdrift.no/under-angrep">Mer om akuttlinjen</a></p>
     </section>`;
 }
