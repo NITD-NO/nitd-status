@@ -35,7 +35,7 @@ function baseStatus(over = {}) {
 function incident(over = {}) {
   return {
     type: "hendelse", title: "Test", status: "lost", components: ["microsoft-365"],
-    started: "2026-11-01T10:00:00+01:00", resolved: "2026-11-01T12:00:00+01:00",
+    started: "2026-11-01T10:00:00+01:00", detected: "2026-11-01T10:05:00+01:00", resolved: "2026-11-01T12:00:00+01:00",
     impact: "E-post er forsinket.", advice: "Ring oss.",
     updates: [{ time: "2026-11-01T10:00:00+01:00", source: "nitd", text: "Vi undersøker." }],
     ...over,
@@ -100,7 +100,7 @@ test("validering: filnavn og startdato må stemme (norsk tid)", () => {
   assert.match(c.errors.join("\n"), /stemmer ikke med start/);
   const c2 = newCollector();
   // 23:30 UTC 31. okt. er 1. nov. i norsk tid
-  validateIncident("2026-11-01-test", incident({ started: "2026-10-31T23:30:00Z" }), comps, c2, []);
+  validateIncident("2026-11-01-test", incident({ started: "2026-10-31T23:30:00Z", detected: "2026-10-31T23:35:00Z" }), comps, c2, []);
   assert.deepEqual(c2.errors, []);
   const c3 = newCollector();
   validateIncident("Hendelse 1", incident(), comps, c3, []);
@@ -159,7 +159,7 @@ test("validering: løst hendelse må ha «resolved», og vedlikehold må ha tids
 test("bygg: arkivet viser bare avsluttede hendelser fra de siste 90 dagene", () => {
   const r = runBuild(baseStatus(), {
     "2026-11-01-ny.json": incident({ title: "Ny hendelse" }),
-    "2026-07-01-gammel.json": incident({ title: "Gammel hendelse", started: "2026-07-01T10:00:00+02:00", resolved: "2026-07-01T12:00:00+02:00",
+    "2026-07-01-gammel.json": incident({ title: "Gammel hendelse", started: "2026-07-01T10:00:00+02:00", detected: "2026-07-01T10:00:00+02:00", resolved: "2026-07-01T12:00:00+02:00",
       updates: [{ time: "2026-07-01T10:00:00+02:00", source: "nitd", text: "Gammel." }] }),
   });
   assert.equal(r.ok, true, r.errors.join("\n"));
@@ -255,4 +255,23 @@ test("vedlikehold skifter status ut fra klokka", () => {
   assert.match(page(after), /Vedlikehold · Fullført/);
   assert.match(readFileSync(join(after.outDir, "arkiv.html"), "utf8"), /Oppgradering/);
   assert.doesNotMatch(readFileSync(join(after.outDir, "index.html"), "utf8"), /Planlagt vedlikehold/);
+});
+
+test("hendelsesstatus følger NSM/ISO-fasene, og «detected» er påkrevd", () => {
+  const comps = validateStatus(baseStatus(), newCollector(), []);
+  for (const status of ["undersokes", "handteres", "overvakes"]) {
+    const c = newCollector();
+    validateIncident("2026-11-01-test", incident({ status, resolved: null }), comps, c, []);
+    assert.deepEqual(c.errors, [], status);
+  }
+  const c = newCollector();
+  validateIncident("2026-11-01-test", incident({ status: "pagaende", resolved: null }), comps, c, []);
+  assert.match(c.errors.join("\n"), /«status» må være en av undersokes, handteres, overvakes, lost/);
+  const c2 = newCollector();
+  validateIncident("2026-11-01-test", incident({ detected: undefined }), comps, c2, []);
+  assert.match(c2.errors.join("\n"), /«detected» mangler/);
+  const r = runBuild(baseStatus(), { "2026-11-01-test.json": incident({ status: "undersokes", resolved: null }) });
+  const page = readFileSync(join(r.outDir, "hendelser", "2026-11-01-test.html"), "utf8");
+  assert.match(page, /Hendelse · Undersøkes/);
+  assert.match(page, /Registrert av NITD <time[^>]*>1\. nov\. 2026 kl\. 10:05/);
 });

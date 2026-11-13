@@ -138,7 +138,7 @@ function incidentWhen(inc) {
   if (inc.type === "vedlikehold") {
     return `<p class="meta">Tidsrom: ${time(inc.scheduledStart)} til ${time(inc.scheduledEnd)}</p>`;
   }
-  return `<p class="meta">Startet ${time(inc.started)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.</p>`;
+  return `<p class="meta">Startet ${time(inc.started)}. Registrert av NITD ${time(inc.detected)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.</p>`;
 }
 
 function incidentDetails(inc, components, { headingLevel = 3, limit = Infinity } = {}) {

@@ -29,6 +29,8 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B15 | Kontaktboksen viser **telefon, kundeportal og helpdesk@nitd.no**. Alle henvendelser havner i kundeportalen. Besluttet av Johannes 13. nov. 2026. | Kunden velger kanal; telefon står først fordi e-post kan være nede ved feil hos Microsoft. |
 | B16 | **Automatisk leverandørstatus:** planlagt GitHub Actions-jobb lager PR og merger selv når sjekkene er grønne og PR-en bare endrer `vendorStatus`. Alt annet krever Johannes. Se 7.1. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, også om natten. Vakt i koden begrenser hva som kan merges uten menneske. |
 | B17 | **Bygg hver time** via Cloudflare deploy hook (7.3), og vedlikehold skifter status ut fra klokka. Besluttet av Johannes 13. nov. 2026. | Arkiv og vedlikehold holder seg riktige uten vedlikehold. |
+| B18 | **Hendelsesstatus etter NSM og ISO:** Undersøkes, Håndteres, Overvåkes, Løst, og nytt felt `detected`. NIS2-klassifisering publiseres ikke. Komponentstatus (Normal, Bedring, Redusert, Nede) beholdes. Besluttet av Johannes 13. nov. 2026. | Kjente faser fra NSM 4.2–4.4 og ISO 27001 A.5.25–5.28 gir felles språk med revisjon og NIS2. |
+| B19 | **Komponenter uten maskinlesbar leverandørkilde** (Sophos) vises som «Normal» til NITD registrerer feil, med teksten «Leverandøren publiserer ikke maskinlesbar status» og lenke til leverandørens side. Besluttet av Johannes 13. nov. 2026. | «Normal» skal ikke se ut som en bekreftelse fra leverandøren. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -151,9 +153,10 @@ Datoen i filnavnet er startdatoen (norsk tid). Filnavnet uten `.json` er hendels
 {
   "type": "hendelse",
   "title": "Forstyrrelser i Microsoft 365 (e-post)",
-  "status": "pagaende",
+  "status": "handteres",
   "components": ["microsoft-365", "helpdesk"],
   "started": "2026-11-12T19:26:00+01:00",
+  "detected": "2026-11-12T19:26:00+01:00",
   "resolved": null,
   "impact": "Hva er berørt, med vanlige ord.",
   "advice": "Hva kundene bør gjøre nå.",
@@ -170,8 +173,24 @@ Datoen i filnavnet er startdatoen (norsk tid). Filnavnet uten `.json` er hendels
 
 | Felt | Hendelse (`type: hendelse`) | Vedlikehold (`type: vedlikehold`) |
 |---|---|---|
-| `status` | `pagaende` · `overvakes` · `lost` | `planlagt` · `pagaende` · `fullfort` |
-| Tider | `started`, `resolved` (påkrevd når `lost`) | `scheduledStart`, `scheduledEnd` (påkrevd), `started`/`resolved` valgfritt |
+| `status` | `undersokes` · `handteres` · `overvakes` · `lost` | `planlagt` · `pagaende` · `fullfort` |
+| Tider | `started` (når feilen startet), `detected` (når NITD ble kjent med den), `resolved` (påkrevd når `lost`) | `scheduledStart`, `scheduledEnd` (påkrevd), `started`/`resolved` valgfritt |
+
+Hendelsesstatus følger fasene i NSMs grunnprinsipper for IKT-sikkerhet (v2.1, kap. 4) og
+ISO/IEC 27001:2022 vedlegg A / ISO/IEC 27035 (B18):
+
+| Status | Betyr | NSM | ISO 27001:2022 |
+|---|---|---|---|
+| Undersøkes | Hendelsen er registrert og vurderes | 4.2 Vurder og klassifiser hendelser | A.5.25 Vurdering og beslutning |
+| Håndteres | Tiltak pågår | 4.3 Kontroller og håndter hendelser | A.5.26 Respons |
+| Overvåkes | Tiltak er gjennomført, vi følger med | 4.3 (gjenoppretting) | A.5.26 Respons |
+| Løst | Normal drift er gjenopprettet | – | – |
+| *(ikke publisert)* | Evaluering i HaloPSA | 4.4 Evaluer og lær av hendelser | A.5.27 Læring |
+
+`detected` gir sporbarhet (A.5.28) og er tidspunktet NIS2-fristene regnes fra
+(tidlig varsel 24 t, melding 72 t, sluttrapport 1 mnd.). Om en hendelse er
+«vesentlig» etter NIS2, er en intern vurdering som meldes til myndighetene. Den
+står i HaloPSA og publiseres ikke.
 | `source` i `updates` | `nitd` eller `leverandor` | samme |
 
 Vedlikehold skifter status ut fra klokka ved hvert bygg: `planlagt` → `pagaende` ved

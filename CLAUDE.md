@@ -47,6 +47,10 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
 3. Ny hendelse: `data/hendelser/ÅÅÅÅ-MM-DD-kort-navn.json` (dato = start i norsk tid). Ellers: legg ny oppdatering øverst i `updates`, oppdater `nextUpdate`.
 4. `scripts/sjekk.sh` lokalt, så PR. Når hendelsen er løst: `status: "lost"`, `resolved`, og komponentene tilbake til `operational`.
 
+Hendelsesstatus (NSM 4.2–4.4, ISO 27001 A.5.25–5.27): `undersokes` → `handteres` → `overvakes` → `lost`.
+`started` = når feilen startet, `detected` = når NITD ble kjent med den (NIS2-fristene regnes herfra).
+NIS2-klassifisering og gjennomgang står i HaloPSA, aldri på siden.
+
 ## Kvalitetskrav
 - Kjør `scripts/sjekk.sh` før PR (validering, tester, bygg). Den kjøres også som statussjekken `sjekk`.
 - WCAG 2.2 AA i lyst og mørkt tema. Workflowen «Kvalitet (UU + Lighthouse)» stopper alvorlige UU-brudd.

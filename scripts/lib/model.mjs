@@ -11,7 +11,9 @@ export const STATE_LABEL = {
 export const RANK = Object.fromEntries(STATES.map((s, i) => [s, i]));
 
 export const INCIDENT_STATUS = {
-  hendelse: { pagaende: "Pågår", overvakes: "Overvåkes", lost: "Løst" },
+  // Følger fasene i NSMs grunnprinsipper (4.2–4.4) og ISO/IEC 27001:2022 A.5.25–5.27 / ISO/IEC 27035.
+  // Evaluering (NSM 4.4, ISO 5.27) skjer i HaloPSA og publiseres ikke.
+  hendelse: { undersokes: "Undersøkes", handteres: "Håndteres", overvakes: "Overvåkes", lost: "Løst" },
   vedlikehold: { planlagt: "Planlagt", pagaende: "Pågår", fullfort: "Fullført" },
 };
 export const CLOSED = { hendelse: "lost", vedlikehold: "fullfort" };
@@ -219,7 +221,10 @@ export function validateIncident(id, inc, components, c, forbidden) {
   const closed = inc.status === CLOSED[inc.type];
   if (inc.type === "hendelse") {
     checkTime(c, where, "started", inc.started, true);
+    // Når NITD ble kjent med hendelsen. NIS2-fristene (24 t, 72 t, 1 mnd.) regnes herfra.
+    checkTime(c, where, "detected", inc.detected, true);
     checkTime(c, where, "resolved", inc.resolved, closed);
+    if (inc.detected && inc.resolved && Date.parse(inc.resolved) < Date.parse(inc.detected)) c.error(where, "«resolved» er før «detected»");
   } else {
     checkTime(c, where, "scheduledStart", inc.scheduledStart, true);
     checkTime(c, where, "scheduledEnd", inc.scheduledEnd, true);
