@@ -1,0 +1,8 @@
+dist/
+node_modules/
+qa-report/
+.lighthouseci/
+.env
+.env.*
+!.env.example
+.DS_Store
