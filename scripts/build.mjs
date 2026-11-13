@@ -45,6 +45,20 @@ export function load({ dataDir = DATA, forbidden = loadForbidden(), now = new Da
   return { status, components, incidents, collector: c };
 }
 
+/**
+ * Planlagt vedlikehold skifter status ut fra klokka, så ingen trenger å endre den for hånd:
+ * «planlagt» → «pagaende» ved start → «fullfort» ved slutt. Satt status «fullfort» brukes alltid.
+ */
+export function deriveMaintenance(incidents, now) {
+  const t = now.getTime();
+  return incidents.map(i => {
+    if (i.type !== "vedlikehold" || i.status === "fullfort") return i;
+    if (t >= Date.parse(i.scheduledEnd)) return { ...i, status: "fullfort", resolved: i.resolved || i.scheduledEnd };
+    if (t >= Date.parse(i.scheduledStart)) return { ...i, status: "pagaende" };
+    return i;
+  });
+}
+
 /** Hendelser som publiseres: alle som ikke er avsluttet, og avsluttede de siste 90 dagene. */
 export function published(incidents, now) {
   const limit = now.getTime() - ARCHIVE_DAYS * 864e5;
@@ -63,7 +77,7 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
     log.error(`\n${c.errors.length} feil i data. Ingenting er bygget.`);
     return { ok: false, errors: c.errors, warnings: c.warnings };
   }
-  const visible = published(incidents, now);
+  const visible = published(deriveMaintenance(incidents, now), now);
   const version = createHash("sha256")
     .update(JSON.stringify(status)).update(JSON.stringify(visible)).digest("hex").slice(0, 16);
   const pages = new Map();

@@ -240,3 +240,19 @@ test("ingen Pages Functions (ingen åpne endepunkter)", () => {
   assert.ok(!existsSync(join(ROOT, "src", "functions")));
   assert.ok(!existsSync(join(ROOT, "src", "_worker.js")));
 });
+
+test("vedlikehold skifter status ut fra klokka", () => {
+  const vedl = {
+    type: "vedlikehold", title: "Oppgradering", status: "planlagt", components: ["helpdesk"],
+    scheduledStart: "2026-11-20T21:00:00Z", scheduledEnd: "2026-11-20T22:00:00Z",
+    impact: "Telefon kan være borte i korte perioder.", updates: [{ time: T, source: "nitd", text: "Planlagt." }],
+  };
+  const at = iso => runBuild(baseStatus(), { "2026-11-20-oppgradering.json": vedl }, new Date(iso));
+  const page = r => readFileSync(join(r.outDir, "hendelser", "2026-11-20-oppgradering.html"), "utf8");
+  assert.match(page(at("2026-11-20T20:00:00Z")), /Vedlikehold · Planlagt/);
+  assert.match(page(at("2026-11-20T21:30:00Z")), /Vedlikehold · Pågår/);
+  const after = at("2026-11-21T08:00:00Z");
+  assert.match(page(after), /Vedlikehold · Fullført/);
+  assert.match(readFileSync(join(after.outDir, "arkiv.html"), "utf8"), /Oppgradering/);
+  assert.doesNotMatch(readFileSync(join(after.outDir, "index.html"), "utf8"), /Planlagt vedlikehold/);
+});

@@ -28,6 +28,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B14 | **Akuttlinjen** («ring 69 81 10 00 og trykk 9» ved aktivt angrep eller akutt driftsstans) står alltid i kontaktboksen, med lenke til norskitdrift.no/under-angrep. Besluttet av Johannes 13. nov. 2026. | Fast tekst, ingen vedlikehold. Samme tilbud som på nettstedet. |
 | B15 | Kontaktboksen viser **telefon, kundeportal og helpdesk@nitd.no**. Alle henvendelser havner i kundeportalen. Besluttet av Johannes 13. nov. 2026. | Kunden velger kanal; telefon står først fordi e-post kan være nede ved feil hos Microsoft. |
 | B16 | **Automatisk leverandørstatus:** planlagt GitHub Actions-jobb lager PR og merger selv når sjekkene er grønne og PR-en bare endrer `vendorStatus`. Alt annet krever Johannes. Se 7.1. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, også om natten. Vakt i koden begrenser hva som kan merges uten menneske. |
+| B17 | **Bygg hver time** via Cloudflare deploy hook (7.3), og vedlikehold skifter status ut fra klokka. Besluttet av Johannes 13. nov. 2026. | Arkiv og vedlikehold holder seg riktige uten vedlikehold. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -173,6 +174,10 @@ Datoen i filnavnet er startdatoen (norsk tid). Filnavnet uten `.json` er hendels
 | Tider | `started`, `resolved` (påkrevd når `lost`) | `scheduledStart`, `scheduledEnd` (påkrevd), `started`/`resolved` valgfritt |
 | `source` i `updates` | `nitd` eller `leverandor` | samme |
 
+Vedlikehold skifter status ut fra klokka ved hvert bygg: `planlagt` → `pagaende` ved
+`scheduledStart` → `fullfort` ved `scheduledEnd`. Bare avlysning eller endret tidsrom
+krever endring i fila.
+
 Hendelsesloggen vises nyeste først. Gjennomgangen etter en hendelse skrives i
 HaloPSA og publiseres ikke. Hendelsesfilen har ingen interne referanser (heller
 ikke saksnummer i HaloPSA), siden alt i `data/` kan havne på nettet ved en feil.
@@ -287,9 +292,11 @@ godkjent.** Minimumskrav:
 ### 7.3 Andre
 
 - Banneret på norskitdrift.no lenker hit (B9) og leser ikke egen status.
-- Daglig bygg (Cloudflare deploy hook fra en planlagt workflow) slik at 90-dagers
-  arkivet og planlagt vedlikehold oppdateres også uten endringer i data.
-  Deploy hook-URL-en er en hemmelighet og legges som GitHub-secret.
+- **Bygg hver time (B17):** planlagt workflow kaller en Cloudflare deploy hook, slik at
+  90-dagers arkivet og vedlikeholdsstatus oppdateres uten endringer i data.
+  Hook-URL-en er en hemmelighet: GitHub-secret `CF_DEPLOY_HOOK_URL` i miljøet `production`
+  (SCR-05), sendt inn via `env`, aldri skrevet til logg (ACT-11). Workflowen lages når
+  Johannes har opprettet hooken og secreten, så den ikke feiler hver time før det.
 
 ## 8. Risiko
 
@@ -318,7 +325,7 @@ godkjent.** Minimumskrav:
 6. ~~Engelsk.~~ **Besluttet:** bare norsk.
 7. ~~ACT-02 for automatisk PR.~~ **Besluttet (B16):** PR + automerge for bare `vendorStatus`.
    Johannes registrerer unntak for ACT-02 og automerge i `baseline.yaml`.
-8. **Daglig bygg** med deploy hook (7.3): ja/nei.
+8. ~~Daglig bygg.~~ **Besluttet (B17):** hver time.
 9. **Speil hos annen leverandør** (risiko 1): når skal det vurderes?
 10. **Startdata**: skal Microsoft-hendelsen fra 12.–13. nov. ligge med som første
     hendelse (sporbarhet), eller starter vi tomt?
@@ -337,5 +344,8 @@ godkjent.** Minimumskrav:
    miljøvariabel `NODE_VERSION=22`. Preview-adresser bak Cloudflare Access.
 2. Eget domene `status.norskitdrift.no` på prosjektet.
 3. Egne tokens med bare lesetilgang for statusrepoet. Ikke gjenbruk fra nettstedet.
-4. Beskytt `main` (så langt GitHub Free tillater), installer Claude GitHub App på repoet,
+4. Cloudflare deploy hook for produksjon, lagt som GitHub-secret `CF_DEPLOY_HOOK_URL`
+   i miljøet `production` (B17). Si fra når den finnes, så lages workflowen.
+5. Registrer unntak for ACT-02 og automerge (B16) i `nitd-repo-standard/baseline.yaml`.
+6. Beskytt `main` (så langt GitHub Free tillater), installer Claude GitHub App på repoet,
    sett topic `nettside`, beskrivelse og homepage (SET-06).
