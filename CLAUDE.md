@@ -28,14 +28,24 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
 - Agenten får bare tokens med lesetilgang. Trengs en endring i Cloudflare: beskriv den og be Johannes om et midlertidig token, som slettes etterpå.
 - Ingen hemmeligheter i chat, kode, dokumentasjon eller prompter. Secrets ligger i GitHub Actions secrets eller miljøinnstillingene, aldri i repoet.
 
+## Hvem endrer statusen (B23, besluttet av Johannes 13. nov. 2026)
+
+- **Leverandørstatus** endres bare av systemet i Cloudflare: bygget henter offentlige kilder.
+  Ingen API-tokens, ingen Claude-økter og ingen planlagte Claude-oppgaver brukes til dette.
+- **Hendelser og NITDs vurdering** skrives av ansatte i NITD.
+- Claude skriver ikke statustekster, oppdaterer ikke hendelser og overvåker ikke leverandører.
+  Claude arbeider bare med koden til siden, og bare når Johannes ber om det.
+- Leverandørens egne meldinger skrives ikke av i hendelsesloggen. Kortet og lenken viser dem.
+
 ## Regler for innhold
 - Rolig og konkret: hva som er berørt, hva kundene bør gjøre og når neste oppdatering kommer (`nextUpdate`).
 - Ingen kundenavn, personopplysninger, interne systemnavn eller verktøynavn. Skriv «Overvåking», «Kundeportal» og «helpdesksystemet», ikke verktøyets navn.
   Bygget stopper på ord i `config/forbudte-ord.txt`, e-post/telefon som ikke er NITDs, hemmeligheter, IP-adresser,
   interne vertsnavn og domener som ikke er godkjent (`ALLOWED_DOMAINS` i `scripts/lib/model.mjs`).
 - Kontakt ved hendelse: telefon 69 81 10 00 (akutt: trykk 9), https://kundeportal.nitd.no og helpdesk@nitd.no. Alt havner i kundeportalen.
-- `observedStatus` («Registrert av NITD») settes alltid manuelt etter en vurdering, aldri automatisk fra målinger.
-- `vendorStatus` er det leverandøren selv melder, med lenke og referanse. Ikke gjett.
+- `observedStatus` (NITDs egen vurdering) settes alltid manuelt, aldri automatisk fra målinger.
+- Leverandørstatus hentes automatisk når siden bygges (`vendor.feed`, `scripts/lib/vendors.mjs`). Den settes aldri for hånd.
+- Språk: saklig og faglig, som i en SLA-rapport. Korte setninger, ingen muntlige uttrykk.
 - Tider lagres med tidssone (ISO 8601). Microsoft oppgir UTC. Siden viser norsk tid.
 - Hendelser slettes aldri. De arkiveres (vises i 90 dager, ligger i repoet etter det).
 - Gjennomgangen etter en hendelse skrives i HaloPSA og publiseres ikke. Ingen interne saksnumre i `data/`.

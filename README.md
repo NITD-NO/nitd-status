@@ -20,7 +20,8 @@ Cloudflare Pages: build-kommando `node scripts/build.mjs`, output `dist`, produk
 
 | Sti | Innhold |
 |---|---|
-| `data/status.json` | Gjeldende status per komponent (`vendorStatus` og `observedStatus`) |
+| `data/status.json` | Komponenter, NITDs vurdering (`observedStatus`) og leverandørkilde (`vendor.feed`) |
+| `scripts/lib/vendors.mjs` | Henter leverandørstatus når siden bygges |
 | `data/hendelser/ÅÅÅÅ-MM-DD-navn.json` | Én fil per hendelse eller planlagt vedlikehold |
 | `config/forbudte-ord.txt` | Ord som ikke skal publiseres (verktøynavn o.l.). Publiseres ikke |
 | `src/` | CSS, JS, fonter, `_headers`, `robots.txt`, `security.txt`. Kopieres til `dist/` |
@@ -28,7 +29,9 @@ Cloudflare Pages: build-kommando `node scripts/build.mjs`, output `dist`, produk
 | `scripts/test.mjs` | Tester (`node --test`) |
 | `scripts/qa/` | Låste testverktøy (axe, Lighthouse) for CI |
 
-Publisert: `/`, `/hendelser/<id>`, `/arkiv`, `/feed.xml` (Atom), `/versjon.json`.
+Publisert: `/`, `/hendelser/<id>`, `/arkiv`, `/feed.xml` (Atom), `/status.json`, `/status.csv` (Excel), `/versjon.json`.
+
+`node scripts/build.mjs` henter leverandørstatus over nett. `--offline` bygger uten nettkall (tester og CI).
 
 ## Leverandørkilder
 
@@ -41,6 +44,6 @@ Downdetector og andre tredjepartstjenester brukes ikke.
 | Uniweb (webhotell og e-post) | <https://status.uniweb.no> – `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | Verifisert (200). Atlassian Statuspage. Relevante komponenter: «Web hosting» og «E-mail». |
 | Zyxel | <https://www.nebulastatus.zyxel.com> – `/api/v2/summary.json`, `/history.rss`, `/history.atom` | JSON, RSS, Atom | Verifisert (200). Gjelder bare Nebula-skytjenesten. `status.zyxel.com` og adressen uten `www.` svarer ikke. |
 | Sophos | <https://status.sophos.com> | Ukjent | **Ikke verifisert maskinelt.** Oppgitt som offisiell statusside i Sophos' dokumentasjon, men svarer 403 på automatiske kall. Sperren omgås ikke. Bare lenke og manuell `vendorStatus`; `observedStatus` er hovedkilden. |
-| Kundeportal (intern kilde) | Leverandørens statusside, RSS (se `docs/plan.md` avsnitt 5) | RSS | Verifisert (200). Brukes bare internt, siden verktøynavn ikke skal stå på siden. |
+| Kundeportal | Leverandørens status.io-side, JSON-API (se `scripts/lib/vendors.mjs`) | JSON | Verifisert (200). Vises uten leverandørnavn og lenke. Region EU. |
 
-Første versjon viser egne tjenester og Microsoft 365. Sophos, Zyxel og Uniweb kommer i neste PR.
+Alle kildene over er i bruk. Sophos har ingen maskinlesbar kilde og vises med lenke og NITDs vurdering.

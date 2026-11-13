@@ -27,10 +27,14 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B13 | Komponenten heter **«Zyxel Nebula»**. Leverandørstatus fra nebulastatus.zyxel.com. Feil på selve utstyret vises som «Registrert av NITD». Besluttet av Johannes 13. nov. 2026. | Navnet sier presist hva leverandørstatusen gjelder. |
 | B14 | **Akuttlinjen** («ring 69 81 10 00 og trykk 9» ved aktivt angrep eller akutt driftsstans) står alltid i kontaktboksen, med lenke til norskitdrift.no/under-angrep. Besluttet av Johannes 13. nov. 2026. | Fast tekst, ingen vedlikehold. Samme tilbud som på nettstedet. |
 | B15 | Kontaktboksen viser **telefon, kundeportal og helpdesk@nitd.no**. Alle henvendelser havner i kundeportalen. Besluttet av Johannes 13. nov. 2026. | Kunden velger kanal; telefon står først fordi e-post kan være nede ved feil hos Microsoft. |
-| B16 | **Automatisk leverandørstatus:** planlagt GitHub Actions-jobb lager PR og merger selv når sjekkene er grønne og PR-en bare endrer `vendorStatus`. Alt annet krever Johannes. Se 7.1. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, også om natten. Vakt i koden begrenser hva som kan merges uten menneske. |
-| B17 | **Bygg hver time** via Cloudflare deploy hook (7.3), og vedlikehold skifter status ut fra klokka. Besluttet av Johannes 13. nov. 2026. | Arkiv og vedlikehold holder seg riktige uten vedlikehold. |
+| B16 | **Erstattet av B20.** ~~Automatisk leverandørstatus:~~ planlagt GitHub Actions-jobb lager PR og merger selv når sjekkene er grønne og PR-en bare endrer `vendorStatus`. Alt annet krever Johannes. Se 7.1. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, også om natten. Vakt i koden begrenser hva som kan merges uten menneske. |
+| B17 | **Jevnlig bygg** via Cloudflare deploy hook (7.3), og vedlikehold skifter status ut fra klokka. Besluttet «hver time»; satt til **annenhver time** fordi Cloudflare Pages Free har 500 bygg per måned (hver time ≈ 744). Hver time krever Pages Pro. Besluttet av Johannes 13. nov. 2026. | Arkiv og vedlikehold holder seg riktige uten vedlikehold. |
 | B18 | **Hendelsesstatus etter NSM og ISO:** Undersøkes, Håndteres, Overvåkes, Løst, og nytt felt `detected`. NIS2-klassifisering publiseres ikke. Komponentstatus (Normal, Bedring, Redusert, Nede) beholdes. Besluttet av Johannes 13. nov. 2026. | Kjente faser fra NSM 4.2–4.4 og ISO 27001 A.5.25–5.28 gir felles språk med revisjon og NIS2. |
 | B19 | **Komponenter uten maskinlesbar leverandørkilde** (Sophos) vises som «Normal» til NITD registrerer feil, med teksten «Leverandøren publiserer ikke maskinlesbar status» og lenke til leverandørens side. Besluttet av Johannes 13. nov. 2026. | «Normal» skal ikke se ut som en bekreftelse fra leverandøren. |
+| B20 | **Leverandørstatus hentes når siden bygges**, ikke via PR. Erstatter B16. Ingen workflow skriver til repoet. Besluttet 13. nov. 2026 etter innspill fra Johannes om at siden skal være vedlikeholdsfri. | Enklere og tryggere: ingen skrivetilgang for workflows, ingen unntak i baseline. |
+| B21 | **Tjenestestatus som kort**, gruppert i «Norsk IT Drift» og «Leverandører», med navn, status og lenke til leverandørens statusside. Etiketten «Registrert av NITD» vises ikke. Leverandørens melding vises som «Microsoft melder …». Besluttet av Johannes 13. nov. 2026. | Saklig og oversiktlig. Det er opplagt at NITD står bak egne merknader. |
+| B22 | **Åpne data:** `/status.json` og `/status.csv` (Excel) med gjeldende status, i tillegg til Atom-feeden. CORS åpen, ingen personopplysninger. Besluttet av Johannes 13. nov. 2026. | Nettstedet og andre systemer kan vise status uten egen kopi. |
+| B23 | **Statusen endres bare av systemet i Cloudflare (leverandørstatus) og av NITD-ansatte (hendelser og egen vurdering).** Ingen API-tokens og ingen Claude-økter brukes til statusoppgaver. Leverandørens meldinger skrives ikke av i hendelsesloggen. Besluttet av Johannes 13. nov. 2026. | Driften av statussiden skal ikke avhenge av AI eller tokens. Mindre risiko, ingen løpende kostnad. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -96,14 +100,19 @@ Verdiene er de samme som i dagens `driftsstatus.json` på nettstedet.
   "groups": [
     {
       "id": "egne",
-      "name": "Egne tjenester",
+      "name": "Norsk IT Drift",
       "components": [
         {
           "id": "helpdesk",
           "name": "Helpdesk og telefon",
           "description": "Kort forklaring av hva komponenten er.",
-          "vendorStatus": null,
           "observedStatus": { "state": "degraded", "note": "…", "updated": "…" }
+        },
+        {
+          "id": "kundeportal",
+          "name": "Kundeportal",
+          "vendor": { "name": "Leverandøren", "public": false, "feed": "kundeportal" },
+          "observedStatus": { "state": "operational", "note": "", "updated": "…" }
         }
       ]
     },
@@ -114,14 +123,7 @@ Verdiene er de samme som i dagens `driftsstatus.json` på nettstedet.
         {
           "id": "microsoft-365",
           "name": "Microsoft 365",
-          "vendor": { "name": "Microsoft", "statusUrl": "https://status.cloud.microsoft/" },
-          "vendorStatus": {
-            "state": "degraded",
-            "note": "Kort, norsk sammendrag av det Microsoft melder.",
-            "refs": ["MO1550821"],
-            "url": "https://status.cloud.microsoft/",
-            "updated": "2026-11-13T07:29:09Z"
-          },
+          "vendor": { "name": "Microsoft", "statusUrl": "https://status.cloud.microsoft/", "feed": "microsoft" },
           "observedStatus": { "state": "operational", "note": "", "updated": "…" }
         }
       ]
@@ -132,17 +134,19 @@ Verdiene er de samme som i dagens `driftsstatus.json` på nettstedet.
 
 Regler:
 
-- `vendorStatus` er det leverandøren selv melder: tilstand, lenke og leverandørens
-  referanse. `null` for egne tjenester og for leverandører uten offentlig kilde.
 - `observedStatus` er det NITD selv ser (saker fra flere kunder, egne målinger).
   Settes manuelt etter vurdering (B7).
-- Siden viser **den dårligste** av de to og skriver kilden:
-  - leverandøren verst → «Meldt av leverandør»
-  - NITD verst → «Registrert av NITD»
-  - like, og ikke normal → «Meldt av leverandør og registrert av NITD»
-  - begge normale → ingen kildetekst
-- Samlet status øverst er den dårligste komponenten: «Alle tjenester virker normalt»,
-  «Noen tjenester er redusert», «Noen tjenester er i bedring» eller «Driftsstans».
+- `vendor.feed` peker på en kilde i `scripts/lib/vendors.mjs`. Bygget henter
+  leverandørens tilstand og legger den på komponenten som `vendorStatus` (bare i
+  minnet). `vendorStatus` kan ikke settes i `data/` (B10, B20).
+- `vendor.public: false` skjuler leverandørens navn og lenke (B11).
+- Svarer ikke kilden, vises «Ukjent» med lenke til leverandørens statusside. «Ukjent»
+  teller ikke i samlet status.
+- Kortet viser den dårligste av leverandørens og NITDs tilstand. Leverandørens melding
+  vises som fast tekst («Microsoft melder redusert tjeneste.»), NITDs merknad som ren
+  tekst uten etikett (B21).
+- Samlet status øverst: «Alle tjenester fungerer normalt», «Tjenestene er i bedring»,
+  «Én eller flere tjenester har redusert funksjon» eller «Driftsavbrudd».
 
 ### 4.3 `data/hendelser/ÅÅÅÅ-MM-DD-kort-navn.json`
 
@@ -263,36 +267,19 @@ Mapping fra leverandørstatus til våre tilstander (forslag, brukes i senere aut
 
 ## 7. Senere (planlagt, ikke bygget)
 
-### 7.1 Automatisk henting fra leverandører (GitHub Actions → PR → automerge)
+### 7.1 Automatisk henting fra leverandører
 
-**Besluttet (B16).** Neste leveranse, siden B10 krever at leverandørstatus ikke vedlikeholdes for hånd.
+**Bygget (B20).** Leverandørstatus hentes når siden bygges (`scripts/lib/vendors.mjs`),
+ikke via PR. Det erstatter PR- og automerge-løsningen i B16:
 
-- Planlagt workflow (hvert 10. minutt kl. 07–22, hvert 30. ellers) henter Microsoft,
-  Uniweb, Zyxel og kundeportalens feed, mapper status etter tabellen over og oppdaterer
-  **bare `vendorStatus`** (og `updated`) i `status.json`. Ingen endring → ingenting skjer.
-- Endring → branch `auto/leverandor-<tid>` → PR med kort norsk sammendrag → automerge.
-- **Vakt i koden:** et eget skript sammenligner `status.json` før og etter og stopper
-  hvis noe annet enn `vendorStatus`-felt er endret, eller hvis andre filer er endret.
-  Da merges ingenting, og PR-en blir stående til Johannes.
-- Aldri `observedStatus`, aldri hendelsesfiler (B7). Ny hendelse skrives av et menneske.
-- Teksten i `vendorStatus.note` lages fra faste norske maler per tilstand («Microsoft
-  melder redusert tjeneste. Se Microsofts statusside.»), ikke maskinoversatt fritekst.
-  Leverandørens tittel og tekst publiseres ikke direkte (validering, tone, språk).
-- Leverandørkilden nede eller ugyldig svar → ingen endring, advarsel i jobbloggen.
-  Siden viser da sist kjente status med tidspunkt («oppdatert kl. …»).
-- Tillatelser: `contents: write` og `pull-requests: write` bare i denne jobben.
-  Ingen secrets: alle kilder er offentlige.
-
-Tekniske forbehold som må løses i den PR-en:
-
-- PR-er laget med `GITHUB_TOKEN` starter ikke andre workflows. Jobben kjører derfor
-  `scripts/sjekk.sh` selv før den lager PR-en, og merger selv (squash) når sjekken
-  og vakten er grønne.
-- GitHub Free håndhever ikke branch protection i private repoer, så GitHubs innebygde
-  automerge kan ikke brukes. Jobben merger med `gh pr merge --squash` i stedet.
-- Krever registrerte unntak i `nitd-repo-standard/baseline.yaml`: **ACT-02**
-  (workflow kan opprette PR) og automerge uten menneskelig godkjenning for denne
-  branchen. Unntakene registreres av Johannes i standardrepoet.
+- Ingen workflow skriver til repoet, så unntak for ACT-02 og automerge trengs ikke.
+- Bare tilstanden brukes, mappet etter tabellen i avsnitt 5. Leverandørens tekst publiseres ikke.
+- Kilde nede eller ukjent svar → «Ukjent» på kortet, advarsel i byggeloggen, bygget fortsetter.
+- Siden bygges på nytt annenhver time (`.github/workflows/bygg-jevnlig.yml`, B17) og ved
+  hver endring i `main`. «Hentet kl. …» står på hvert kort.
+- Ulempe: leverandørstatus lagres ikke i git. Historikken finnes hos leverandøren, og
+  hendelser skrives som før i `data/hendelser/`.
+- Tester og CI bygger med `--offline` (ingen nettkall). Produksjonsbygget i Cloudflare henter.
 
 ### 7.2 Sikkerhetsvarsler via webhook (Sophos, Zyxel, Microsoft)
 
@@ -342,8 +329,7 @@ godkjent.** Minimumskrav:
 4. ~~Akuttlinjen.~~ **Besluttet (B14):** alltid i kontaktboksen.
 5. ~~Helpdesk-e-post.~~ **Besluttet (B15):** alle tre kanaler vises.
 6. ~~Engelsk.~~ **Besluttet:** bare norsk.
-7. ~~ACT-02 for automatisk PR.~~ **Besluttet (B16):** PR + automerge for bare `vendorStatus`.
-   Johannes registrerer unntak for ACT-02 og automerge i `baseline.yaml`.
+7. ~~ACT-02 for automatisk PR.~~ **Erstattet (B20):** henting ved bygg, ingen unntak trengs.
 8. ~~Daglig bygg.~~ **Besluttet (B17):** hver time.
 9. ~~Speil hos annen leverandør.~~ **Besluttet:** ikke aktuelt. Cloudflare-avhengigheten aksepteres.
 10. ~~Startdata.~~ **Besluttet:** Microsoft-hendelsen fra 12.–13. nov. blir liggende som
@@ -365,6 +351,5 @@ godkjent.** Minimumskrav:
 3. Egne tokens med bare lesetilgang for statusrepoet. Ikke gjenbruk fra nettstedet.
 4. Cloudflare deploy hook for produksjon, lagt som GitHub-secret `CF_DEPLOY_HOOK_URL`
    i miljøet `production` (B17). Si fra når den finnes, så lages workflowen.
-5. Registrer unntak for ACT-02 og automerge (B16) i `nitd-repo-standard/baseline.yaml`.
 6. Beskytt `main` (så langt GitHub Free tillater), installer Claude GitHub App på repoet,
    sett topic `nettside`, beskrivelse og homepage (SET-06).

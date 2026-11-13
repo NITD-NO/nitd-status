@@ -9,9 +9,8 @@
   "started": "2026-11-12T19:26:00+01:00",
   "detected": "2026-11-12T19:26:00+01:00",
   "resolved": null,
-  "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være berørt der de bruker e-post eller kalender. Telefon til Norsk IT Drift virker normalt.",
-  "advice": "Ring oss på 69 81 10 00 ved henvendelser eller driftsstans. Ikke send samme e-post flere ganger. Forsinket e-post holdes hos Microsoft i opptil 48 timer og blir levert når feilen er rettet.",
-  "nextUpdate": "2026-11-13T10:00:00Z",
+  "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være påvirket der de bruker e-post eller kalender. Telefon til Norsk IT Drift fungerer normalt.",
+  "advice": "Kontakt oss på telefon 69 81 10 00. Ikke send samme e-post flere ganger. Microsoft holder forsinket e-post i opptil 48 timer og leverer den når feilen er rettet.",
   "vendorRefs": [
     {
       "vendor": "Microsoft",
@@ -25,6 +24,16 @@
     }
   ],
   "updates": [
+    {
+      "time": "2026-11-13T11:10:00+01:00",
+      "source": "nitd",
+      "text": "Videre status fra Microsoft vises automatisk under Tjenestestatus, med lenke til Microsofts statusside. Hendelsen avsluttes når Microsoft melder normal drift."
+    },
+    {
+      "time": "2026-11-13T10:01:00Z",
+      "source": "leverandor",
+      "text": "Microsoft melder gradvis bedring for flere tjenester, men kapasiteten er fortsatt ikke tilbake på normalt nivå, og tjenestene kan variere. Forsinket e-post holdes fortsatt i opptil 48 timer. Microsoft har ingen tegn på ondsinnet aktivitet. Neste oppdatering fra Microsoft kommer kl. 12:00."
+    },
     {
       "time": "2026-11-13T09:14:00Z",
       "source": "leverandor",
@@ -78,7 +87,7 @@
     {
       "time": "2026-11-12T19:26:00+01:00",
       "source": "nitd",
-      "text": "Vi registrerer problemer med Outlook og Exchange Online hos flere kunder. Forstyrrelsen starter (Microsofts starttidspunkt)."
+      "text": "Vi registrerer problemer med Outlook og Exchange Online hos flere kunder. Forstyrrelsen startet kl. 19:26 ifølge Microsoft."
     }
   ]
 }
