@@ -11,7 +11,18 @@ import { renderIndex, renderIncident, renderArchive, render404 } from "./lib/ren
 import { renderFeed } from "./lib/feed.mjs";
 import { renderStatusJson, renderStatusCsv } from "./lib/export.mjs";
 import { fetchVendors, offlineVendors } from "./lib/vendors.mjs";
-import { overall } from "./lib/render.mjs";
+import { overall, ASSETS } from "./lib/render.mjs";
+import { renameSync } from "node:fs";
+
+/** Filnavn med innholdshash: css/status.css → css/status.3f2a9c1b.css */
+function hashedAssets() {
+  const out = {};
+  for (const [key, rel] of Object.entries({ css: "css/status.css", theme: "js/theme.js", app: "js/status.js" })) {
+    const h = createHash("sha256").update(readFileSync(join(ROOT, "src", rel))).digest("hex").slice(0, 10);
+    out[key] = { src: rel, dest: rel.replace(/\.(css|js)$/, `.${h}.$1`) };
+  }
+  return out;
+}
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -67,14 +78,46 @@ export function published(incidents, now) {
   const limit = now.getTime() - ARCHIVE_DAYS * 864e5;
   return incidents.filter(i => {
     if (i.status !== CLOSED[i.type]) return true;
-    const end = i.resolved || i.scheduledEnd;
-    return Date.parse(end) >= limit;
+    return endTime(i) >= limit;
   });
 }
 
 /** Leverandørkildene som brukes i status.json. */
-export function feedsIn(status) {
-  return [...new Set((status?.groups || []).flatMap(g => g.components).map(c => c.vendor?.feed).filter(Boolean))];
+export function feedsIn(status, incidents = []) {
+  const comps = (status?.groups || []).flatMap(g => g.components);
+  return [...new Set([
+    ...comps.map(c => c.vendor?.feed),
+    ...comps.map(c => c.observedStatus?.clearWhen),
+    status?.messageClearWhen,
+    ...incidents.map(i => i.autoResolve),
+  ].filter(Boolean))];
+}
+
+/**
+ * Avslutter automatisk når leverandøren melder normal drift (B24), slik at statussiden
+ * ikke trenger manuell opprydding:
+ * - NITDs merknad med «clearWhen» regnes som normal.
+ * - Meldingen øverst med «messageClearWhen» skjules.
+ * - Hendelser med «autoResolve» vises som løst.
+ * «Ukjent» (kilden svarte ikke) avslutter ingenting.
+ */
+export function applyVendorClears(status, incidents, vendors) {
+  const ok = feed => feed && vendors[feed]?.state === "operational";
+  for (const g of status.groups) for (const comp of g.components) {
+    const o = comp.observedStatus;
+    if (o && ok(o.clearWhen)) comp.observedStatus = { ...o, state: "operational", note: "" };
+  }
+  if (ok(status.messageClearWhen)) status.message = "";
+  return incidents.map(i => (i.type === "hendelse" && i.status !== "lost" && ok(i.autoResolve))
+    ? { ...i, status: "lost", autoResolved: true, nextUpdate: null }
+    : i);
+}
+
+/** Når en avsluttet hendelse sluttet. Automatisk løste hendelser bruker siste oppdatering. */
+export function endTime(i) {
+  if (i.resolved) return Date.parse(i.resolved);
+  if (i.scheduledEnd) return Date.parse(i.scheduledEnd);
+  return Math.max(...i.updates.map(u => Date.parse(u.time)));
 }
 
 /**
@@ -90,15 +133,17 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
     return { ok: false, errors: c.errors, warnings: c.warnings };
   }
   // Hentet leverandørstatus legges på komponentene (bare i minnet, aldri i data/).
-  const v = vendors || offlineVendors(feedsIn(status), now);
+  const v = vendors || offlineVendors(feedsIn(status, incidents), now);
   for (const g of status.groups) for (const comp of g.components) {
     if (comp.vendor?.feed) comp.vendorStatus = v[comp.vendor.feed] || { state: "unknown", fetched: now.toISOString() };
   }
-  const visible = published(deriveMaintenance(incidents, now), now);
+  const visible = published(applyVendorClears(status, deriveMaintenance(incidents, now), v), now);
   const vendorStates = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x.state]));
   const version = createHash("sha256")
     .update(JSON.stringify(status, (k, val) => (k === "fetched" ? undefined : val)))
     .update(JSON.stringify(visible)).update(JSON.stringify(vendorStates)).digest("hex").slice(0, 16);
+  const assets = hashedAssets();
+  for (const [k, a] of Object.entries(assets)) ASSETS[k] = "/" + a.dest;
   const pages = new Map();
   pages.set("index.html", renderIndex({ status, incidents: visible, components, now, version }));
   pages.set("arkiv.html", renderArchive({ incidents: visible, components, status, version }));
@@ -113,6 +158,7 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
     rmSync(outDir, { recursive: true, force: true });
     mkdirSync(outDir, { recursive: true });
     cpSync(join(ROOT, "src"), outDir, { recursive: true });
+    for (const a of Object.values(assets)) renameSync(join(outDir, a.src), join(outDir, a.dest));
     for (const [file, content] of pages) {
       mkdirSync(dirname(join(outDir, file)), { recursive: true });
       writeFileSync(join(outDir, file), content);
@@ -128,7 +174,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   // --offline (eller STATUS_OFFLINE=1): ingen nettkall, leverandørstatus blir «Ukjent». Brukes i tester og CI.
   const offline = !write || process.argv.includes("--offline") || process.env.STATUS_OFFLINE === "1";
   const pre = load({ now });
-  const vendors = offline || pre.collector.errors.length ? null : await fetchVendors(feedsIn(pre.status), now);
+  const vendors = offline || pre.collector.errors.length ? null : await fetchVendors(feedsIn(pre.status, pre.incidents), now);
   const r = build({ now, write, vendors });
   if (!r.ok) process.exit(1);
   if (!write) console.log("Data er gyldige.");

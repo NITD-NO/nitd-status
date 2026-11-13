@@ -6,6 +6,7 @@
     "microsoft-365",
     "helpdesk"
   ],
+  "autoResolve": "microsoft",
   "started": "2026-11-12T19:26:00+01:00",
   "detected": "2026-11-12T19:26:00+01:00",
   "resolved": null,
@@ -24,11 +25,6 @@
     }
   ],
   "updates": [
-    {
-      "time": "2026-11-13T11:10:00+01:00",
-      "source": "nitd",
-      "text": "Videre status fra Microsoft vises automatisk under Tjenestestatus, med lenke til Microsofts statusside. Hendelsen avsluttes når Microsoft melder normal drift."
-    },
     {
       "time": "2026-11-13T10:01:00Z",
       "source": "leverandor",

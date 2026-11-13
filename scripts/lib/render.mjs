@@ -2,6 +2,10 @@
 import { STATE_LABEL, INCIDENT_STATUS, CLOSED, SOURCE_LABEL, RANK, STATES, effective } from "./model.mjs";
 
 export const SITE = "https://status.norskitdrift.no";
+
+// Stilark og skript får innholdshash i filnavnet (settes av bygget), så nettleseren aldri
+// kombinerer ny HTML med gamle filer fra cache. Se docs/plan.md B25.
+export const ASSETS = { css: "/css/status.css", theme: "/js/theme.js", app: "/js/status.js" };
 export const PHONE = { text: "69 81 10 00", tel: "+4769811000" };
 export const PORTAL = "https://kundeportal.nitd.no";
 export const EMAIL = "helpdesk@nitd.no";
@@ -57,9 +61,9 @@ function layout({ title, description, path, body, updated, version }) {
   <link rel="alternate" type="application/atom+xml" title="Driftsstatus – Norsk IT Drift (Atom)" href="/feed.xml">
   <link rel="icon" href="/nitd-mark.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/source-sans-3-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/css/status.css">
-  <script src="/js/theme.js"></script>
-  <script src="/js/status.js" defer></script>
+  <link rel="stylesheet" href="${ASSETS.css}">
+  <script src="${ASSETS.theme}"></script>
+  <script src="${ASSETS.app}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#innhold">Hopp til innhold</a>
@@ -148,6 +152,9 @@ function incidentWhen(inc) {
   if (inc.type === "vedlikehold") {
     return `<p class="meta">Tidsrom: ${time(inc.scheduledStart)} til ${time(inc.scheduledEnd)}</p>`;
   }
+  if (inc.autoResolved) {
+    return `<p class="meta">Startet ${time(inc.started)}. ${esc(inc.vendorRefs?.[0]?.vendor || "Leverandøren")} melder normal drift.</p>`;
+  }
   return `<p class="meta">Startet ${time(inc.started)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.</p>`;
 }
 
@@ -188,11 +195,10 @@ function componentCard(comp) {
   }
   if (o && o.state !== "operational" && o.note) lines.push(`<p>${esc(o.note)}</p>`);
   if (v && v.state === "unknown" && shown) {
-    lines.push(`<p class="meta">Status fra ${esc(vendor.name)} er ikke tilgjengelig. Se leverandørens statusside.</p>`);
+    lines.push(`<p class="meta">Status fra ${esc(vendor.name)} kan ikke vises nå. Se ${esc(vendor.name)}s statusside.</p>`);
   }
-  if (shown && !vendor.feed) lines.push(`<p class="meta">Status fra ${esc(vendor.name)} hentes ikke automatisk.</p>`);
   const foot = [];
-  if (v && v.state !== "unknown") foot.push(`Hentet ${time(v.fetched, { year: false })}`);
+  if (v && v.state !== "unknown") foot.push(`Kontrollert ${time(v.fetched, { year: false })}`);
   if (shown && vendor.statusUrl) foot.push(`<a href="${esc(vendor.statusUrl)}">Statusside hos ${esc(vendor.name)}</a>`);
   return `<li class="component component--${state}">
           <div class="component-head">
@@ -229,8 +235,10 @@ export function renderIndex({ status, incidents, components, now, version }) {
   const maintenance = incidents.filter(i => i.type === "vedlikehold" && i.status !== "fullfort")
     .sort((a, b) => Date.parse(a.scheduledStart) - Date.parse(b.scheduledStart));
   const weekAgo = now.getTime() - 7 * 864e5;
-  const recent = incidents.filter(i => i.status === CLOSED[i.type] && Date.parse(i.resolved || i.scheduledEnd) >= weekAgo)
-    .sort((a, b) => Date.parse(b.resolved || b.scheduledEnd) - Date.parse(a.resolved || a.scheduledEnd));
+  const end = i => (i.resolved ? Date.parse(i.resolved) : i.scheduledEnd ? Date.parse(i.scheduledEnd)
+    : Math.max(...i.updates.map(u => Date.parse(u.time))));
+  const recent = incidents.filter(i => i.status === CLOSED[i.type] && end(i) >= weekAgo)
+    .sort((a, b) => end(b) - end(a));
 
   const body = `
     <section class="summary summary--${state}" aria-labelledby="status-tittel">

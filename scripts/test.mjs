@@ -200,7 +200,7 @@ test("bygg: tekst escapes, og hentet leverandørstatus vises på kortet med lenk
   const index = readFileSync(join(r2.outDir, "index.html"), "utf8");
   assert.match(index, /Test &amp; prøve &gt; alt/);
   assert.match(index, /Microsoft melder driftsavbrudd\./);
-  assert.match(index, /Hentet <time[^>]*>13\. nov\. kl\. 12:55/);
+  assert.match(index, /Kontrollert <time[^>]*>13\. nov\. kl\. 12:55/);
   assert.match(index, /href="https:\/\/status\.cloud\.microsoft\/">Statusside hos Microsoft/);
   assert.match(index, /<span>Driftsavbrudd<\/span>/);
   assert.doesNotMatch(index, /Registrert av NITD|NITD registrerer/);
@@ -210,7 +210,7 @@ test("bygg: leverandør som ikke svarer gir «Ukjent», ikke feil samlet status"
   const r = runBuild(baseStatus(), {});
   const index = readFileSync(join(r.outDir, "index.html"), "utf8");
   assert.match(index, /pill--unknown">Ukjent/);
-  assert.match(index, /Status fra Microsoft er ikke tilgjengelig/);
+  assert.match(index, /Status fra Microsoft kan ikke vises nå/);
   assert.match(index, /Alle tjenester fungerer normalt/);
 });
 
@@ -313,4 +313,66 @@ test("hendelsesstatus følger NSM/ISO-fasene, og «detected» er påkrevd", () =
   assert.match(page, /Hendelse · Undersøkes/);
   // «detected» lagres for sporbarhet (NIS2, ISO 27001 A.5.28), men vises ikke på siden.
   assert.match(page, /Startet <time[^>]*>1\. nov\. 2026 kl\. 10:00/);
+});
+
+test("selvgående: hendelse, merknad og melding avsluttes når leverandøren melder normal drift", () => {
+  const s = baseStatus({ message: "Microsoft 365 har redusert tjeneste.", messageClearWhen: "microsoft" });
+  s.groups[0].components[0].observedStatus = { state: "degraded", note: "E-post til helpdesk er påvirket.", clearWhen: "microsoft", updated: T };
+  const inc = incident({ status: "handteres", resolved: null, autoResolve: "microsoft",
+    vendorRefs: [{ vendor: "Microsoft", ref: "MO1", url: "https://status.cloud.microsoft/" }] });
+  const files = { "2026-11-01-test.json": inc };
+  const at = (state, now = "2026-11-03T12:00:00Z") =>
+    runBuild(s, files, new Date(now), { microsoft: { state, fetched: now } });
+
+  const pagaende = at("degraded");
+  let index = readFileSync(join(pagaende.outDir, "index.html"), "utf8");
+  assert.match(index, /id="pagaende-tittel"/);
+  assert.match(index, /E-post til helpdesk er påvirket/);
+  assert.match(index, /Microsoft 365 har redusert tjeneste/);
+
+  // Ukjent (kilden svarte ikke) avslutter ingenting.
+  index = readFileSync(join(at("unknown").outDir, "index.html"), "utf8");
+  assert.match(index, /id="pagaende-tittel"/);
+
+  const normal = at("operational");
+  index = readFileSync(join(normal.outDir, "index.html"), "utf8");
+  assert.doesNotMatch(index, /id="pagaende-tittel"/);
+  assert.doesNotMatch(index, /E-post til helpdesk er påvirket/);
+  assert.doesNotMatch(index, /Microsoft 365 har redusert tjeneste/);
+  assert.match(index, /Alle tjenester fungerer normalt/);
+  assert.match(index, /Siste 7 dager[\s\S]*Test/);
+  const page = readFileSync(join(normal.outDir, "hendelser", "2026-11-01-test.html"), "utf8");
+  assert.match(page, /Hendelse · Løst/);
+  assert.match(page, /Microsoft melder normal drift\./);
+  assert.match(readFileSync(join(normal.outDir, "arkiv.html"), "utf8"), /Test/);
+
+  // Etter 90 dager forsvinner den fra arkivet, men fila ligger i repoet.
+  const senere = at("operational", "2027-03-01T12:00:00Z");
+  assert.doesNotMatch(readFileSync(join(senere.outDir, "arkiv.html"), "utf8"), /Test/);
+});
+
+test("validering: autoResolve og clearWhen må peke på en kjent leverandørkilde", () => {
+  const s = baseStatus({ messageClearWhen: "finnes-ikke" });
+  s.groups[0].components[0].observedStatus.clearWhen = "finnes-ikke";
+  const r = runBuild(s, { "2026-11-01-test.json": incident({ autoResolve: "finnes-ikke" }) });
+  assert.equal(r.ok, false);
+  const all = r.errors.join("\n");
+  assert.match(all, /«messageClearWhen» må være en av/);
+  assert.match(all, /«observedStatus\.clearWhen» må være en av/);
+  assert.match(all, /«autoResolve» må være en av/);
+});
+
+test("cache: stilark og skript har innholdshash i filnavnet, og HTML peker på dem", () => {
+  const r = runBuild(baseStatus(), {});
+  const index = readFileSync(join(r.outDir, "index.html"), "utf8");
+  const css = index.match(/href="\/css\/(status\.[0-9a-f]{10}\.css)"/);
+  const js = index.match(/src="\/js\/(status\.[0-9a-f]{10}\.js)"/);
+  const theme = index.match(/src="\/js\/(theme\.[0-9a-f]{10}\.js)"/);
+  assert.ok(css && js && theme, "hashede filnavn mangler i HTML");
+  assert.ok(existsSync(join(r.outDir, "css", css[1])));
+  assert.ok(existsSync(join(r.outDir, "js", js[1])));
+  assert.ok(!existsSync(join(r.outDir, "css", "status.css")), "uhashet stilark skal ikke publiseres");
+  const h = readFileSync(join(ROOT, "src", "_headers"), "utf8");
+  assert.match(h, /\/css\/\*\n  Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(h, /\n\/\n  Cache-Control: no-cache/);
 });
