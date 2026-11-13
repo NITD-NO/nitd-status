@@ -2,17 +2,33 @@
   "type": "hendelse",
   "title": "Forstyrrelser i Microsoft 365 (e-post)",
   "status": "pagaende",
-  "components": ["microsoft-365", "helpdesk"],
+  "components": [
+    "microsoft-365",
+    "helpdesk"
+  ],
   "started": "2026-11-12T19:26:00+01:00",
   "resolved": null,
   "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være berørt der de bruker e-post eller kalender. Telefon til Norsk IT Drift virker normalt.",
-  "advice": "Ring oss på 69 81 10 00 ved henvendelser eller driftsstans. Ikke send samme e-post flere ganger. Den blir levert når feilen er rettet.",
-  "nextUpdate": "2026-11-13T08:30:00Z",
+  "advice": "Ring oss på 69 81 10 00 ved henvendelser eller driftsstans. Ikke send samme e-post flere ganger. Forsinket e-post holdes hos Microsoft i opptil 48 timer og blir levert når feilen er rettet.",
+  "nextUpdate": "2026-11-13T10:00:00Z",
   "vendorRefs": [
-    { "vendor": "Microsoft", "ref": "MO1550821", "url": "https://status.cloud.microsoft/" },
-    { "vendor": "Microsoft", "ref": "EX1550543", "url": "https://status.cloud.microsoft/" }
+    {
+      "vendor": "Microsoft",
+      "ref": "MO1550821",
+      "url": "https://status.cloud.microsoft/"
+    },
+    {
+      "vendor": "Microsoft",
+      "ref": "EX1550543",
+      "url": "https://status.cloud.microsoft/"
+    }
   ],
   "updates": [
+    {
+      "time": "2026-11-13T09:14:00Z",
+      "source": "leverandor",
+      "text": "Microsoft ser de første tegnene til stabilisering, men kapasiteten er ikke tilbake på normalt nivå. Trafikken slippes gradvis tilbake. Microsoft holder nå forsinket e-post i opptil 48 timer, slik at den ikke går tapt. Neste oppdatering fra Microsoft kommer kl. 11:00."
+    },
     {
       "time": "2026-11-13T08:29:00+01:00",
       "source": "leverandor",
