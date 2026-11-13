@@ -93,6 +93,7 @@ function contactBlock() {
   return `<section class="card contact" aria-labelledby="kontakt-tittel">
       <h2 id="kontakt-tittel">Kontakt ved hendelse</h2>
       <p>Ring <a class="phone" href="tel:${PHONE.tel}">${PHONE.text}</a> eller meld sak i <a href="${PORTAL}">kundeportalen</a>.</p>
+      <p class="urgent"><strong>Ved aktivt angrep eller akutt driftsstans:</strong> ring ${PHONE.text} og trykk <strong>9</strong>. <a href="https://norskitdrift.no/under-angrep">Mer om akuttlinjen</a></p>
     </section>`;
 }
 

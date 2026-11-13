@@ -25,6 +25,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B11 | **Kundeportal** får `vendorStatus` automatisk fra leverandørens offentlige feed, men vises **uten leverandørnavn og uten lenke** («Meldt av leverandør»). Modellen får `vendor.public: false` for dette. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, og ingen verktøynavn på siden. |
 | B12 | **Uniweb vises som to komponenter:** «Webhotell (Uniweb)» = Uniwebs gruppe «Web hosting» + «Domains / DNS». «E-post (Uniweb)» = gruppen «E-mail» + «Domains / DNS». Hver viser den dårligste av sine underkomponenter. Besluttet av Johannes 13. nov. 2026. | Kunder med bare nettside eller bare e-post ser straks om de er berørt. DNS-feil rammer begge. |
 | B13 | Komponenten heter **«Zyxel Nebula»**. Leverandørstatus fra nebulastatus.zyxel.com. Feil på selve utstyret vises som «Registrert av NITD». Besluttet av Johannes 13. nov. 2026. | Navnet sier presist hva leverandørstatusen gjelder. |
+| B14 | **Akuttlinjen** («ring 69 81 10 00 og trykk 9» ved aktivt angrep eller akutt driftsstans) står alltid i kontaktboksen, med lenke til norskitdrift.no/under-angrep. Besluttet av Johannes 13. nov. 2026. | Fast tekst, ingen vedlikehold. Samme tilbud som på nettstedet. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -290,7 +291,7 @@ godkjent.** Minimumskrav:
 1. ~~Godkjenne kildene, særlig Sophos.~~ **Besluttet (B10):** ingen manuell leverandørstatus; Sophos får fast lenke og bare «Registrert av NITD».
 2. ~~Uniweb: én eller to komponenter.~~ **Besluttet (B12):** to komponenter.
 3. ~~Zyxel: navn.~~ **Besluttet (B13):** «Zyxel Nebula».
-4. **Akuttlinjen**: skal «trykk 9» (aktiv trussel) vises ved hendelser, som på nettstedet?
+4. ~~Akuttlinjen.~~ **Besluttet (B14):** alltid i kontaktboksen.
 5. **Helpdesk-e-post**: skal `helpdesk@nitd.no` stå på siden, eller bare telefon og kundeportal
    (som i oppgaven)? Utkastet bruker bare telefon og kundeportal.
 6. **Engelsk**: trengs en engelsk versjon eller oppsummering?
