@@ -184,8 +184,13 @@ Bygget stopper ved:
 - lenker som ikke er `https://`
 - HTML i tekstfelt (all tekst er ren tekst og escapes)
 - e-postadresser og telefonnumre andre enn NITDs egne (personvern)
-- ord fra `config/forbudte-ord.txt` (interne system- og verktøynavn, kundenavn).
-  Fila fylles av NITD og publiseres ikke.
+- ord fra `config/forbudte-ord.txt` (verktøy-, system- og kundenavn). Fila publiseres ikke.
+  På siden brukes generiske navn: «Kundeportal», «Overvåking» og «helpdesksystemet».
+- hemmeligheter: private nøkler, tokens (GitHub, AWS, Slack, JWT, API-nøkler),
+  «passord:»/«token=» o.l., og lange tilfeldige strenger
+- IP-adresser (IPv4 og IPv6) og interne vertsnavn (`.local`, `.lan`, `.internal`, `.corp` …)
+- lenker og domener i tekst som ikke er NITDs eller en godkjent leverandørkilde
+  (`ALLOWED_DOMAINS` i `scripts/lib/model.mjs`), og lenker med brukernavn/passord
 
 Bygget **advarer** (stopper ikke) når en komponent ikke er normal uten at en
 pågående hendelse peker på den, og når `nextUpdate` er passert.
@@ -295,8 +300,9 @@ godkjent.** Minimumskrav:
     hendelse (sporbarhet), eller starter vi tomt?
 
 11. ~~Kundeportal og leverandørstatus.~~ **Besluttet (B11):** automatisk, uten navn og lenke.
-12. **Forbudte ord**: hvilke interne system- og verktøynavn skal i `config/forbudte-ord.txt`
-    (i dag bare «HaloPSA»)? Navnet på overvåkingsverktøyet bør inn.
+12. ~~Forbudte ord.~~ **Besluttet:** generiske navn på siden («helpdesksystemet» o.l.), navneliste
+    i `config/forbudte-ord.txt`, og mønstersjekk for hemmeligheter, IP-er, interne verter og
+    ukjente domener. Johannes fyller på navnelisten ved behov.
 13. **Microsoft-referanser**: feeden mangler MO/EX-nummer. Skal vi vise referansen (krever
     manuell innlegging fra admin center), eller bare lenke til Microsofts statusside?
 

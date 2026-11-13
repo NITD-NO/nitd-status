@@ -30,8 +30,9 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
 
 ## Regler for innhold
 - Rolig og konkret: hva som er berørt, hva kundene bør gjøre og når neste oppdatering kommer (`nextUpdate`).
-- Ingen kundenavn, personopplysninger, interne systemnavn eller verktøynavn. Skriv «Overvåking» og «Kundeportal», ikke verktøyets navn.
-  Bygget stopper på ord i `config/forbudte-ord.txt`, og på e-post/telefon som ikke er NITDs.
+- Ingen kundenavn, personopplysninger, interne systemnavn eller verktøynavn. Skriv «Overvåking», «Kundeportal» og «helpdesksystemet», ikke verktøyets navn.
+  Bygget stopper på ord i `config/forbudte-ord.txt`, e-post/telefon som ikke er NITDs, hemmeligheter, IP-adresser,
+  interne vertsnavn og domener som ikke er godkjent (`ALLOWED_DOMAINS` i `scripts/lib/model.mjs`).
 - Kontakt ved hendelse: telefon 69 81 10 00 og https://kundeportal.nitd.no.
 - `observedStatus` («Registrert av NITD») settes alltid manuelt etter en vurdering, aldri automatisk fra målinger.
 - `vendorStatus` er det leverandøren selv melder, med lenke og referanse. Ikke gjett.

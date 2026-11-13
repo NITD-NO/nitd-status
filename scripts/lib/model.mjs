@@ -21,6 +21,36 @@ export const SOURCE_LABEL = { nitd: "NITD", leverandor: "Leverandør" };
 const ALLOWED_PHONES = new Set(["69811000"]);
 const ALLOWED_EMAILS = new Set(["helpdesk@nitd.no"]);
 
+// Domener som kan lenkes til eller nevnes i publisert tekst: NITD og godkjente leverandørkilder
+// (docs/plan.md avsnitt 5). Alt annet stopper bygget, så interne adresser ikke kan lekke ut.
+export const ALLOWED_DOMAINS = [
+  "norskitdrift.no", "nitd.no",
+  "status.cloud.microsoft", "status.uniweb.no", "nebulastatus.zyxel.com", "status.sophos.com",
+];
+function allowedHost(host) {
+  host = host.toLowerCase().replace(/\.$/, "");
+  return ALLOWED_DOMAINS.some(d => host === d || host.endsWith("." + d));
+}
+
+// Mønstre for hemmeligheter og interne opplysninger. Treff stopper bygget.
+const SECRET_PATTERNS = [
+  [/-----BEGIN [A-Z ]*(PRIVATE KEY|CERTIFICATE)-----/, "nøkkel eller sertifikat"],
+  [/\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}/, "GitHub-token"],
+  [/\b(AKIA|ASIA)[A-Z0-9]{16}\b/, "AWS-nøkkel"],
+  [/\bxox[abpors]-[A-Za-z0-9-]{10,}/, "Slack-token"],
+  [/\bsk-[A-Za-z0-9_-]{20,}/, "API-nøkkel"],
+  [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\./, "JWT/token"],
+  [/\b(passord|password|pwd|secret|hemmelighet|api[_ -]?key|token)\s*[:=]/i, "passord eller nøkkel"],
+  [/\b[A-Fa-f0-9]{32,}\b/, "lang heksadesimal streng (mulig nøkkel eller hash)"],
+  [/\b[A-Za-z0-9+/_-]{40,}={0,2}(?![A-Za-z0-9+/_-])/, "lang tilfeldig streng (mulig nøkkel)"],
+];
+const IPV4 = /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])/;
+const IPV6 = /(?<![\w:])(?:[0-9a-f]{1,4}:){3,7}[0-9a-f]{1,4}(?![\w:])/i;
+const INTERNAL_HOST = /\b[\w-]+(\.[\w-]+)*\.(local|lan|internal|intern|corp|home|localdomain)\b/i;
+// Hvert ledd må ha minst to tegn, så forkortelser som «f.eks.» ikke tolkes som domener.
+const DOMAIN_IN_TEXT = /\b(?:https?:\/\/)?((?:[a-z0-9][a-z0-9-]+\.)+[a-z]{2,})(?:[/:?#]\S*)?/gi;
+const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+
 const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 const FILE_NAME = /^(\d{4}-\d{2}-\d{2})-[a-z0-9]+(-[a-z0-9]+)*$/;
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -80,6 +110,8 @@ function checkUrl(c, where, field, value, required) {
   let u;
   try { u = new URL(value); } catch { c.error(where, `«${field}» er ikke en gyldig URL`); return; }
   if (u.protocol !== "https:") c.error(where, `«${field}» må være https://`);
+  if (u.username || u.password) c.error(where, `«${field}» inneholder brukernavn eller passord`);
+  if (!allowedHost(u.hostname)) c.error(where, `«${field}» peker til ${u.hostname}, som ikke er et godkjent domene (se ALLOWED_DOMAINS)`);
 }
 
 function checkText(c, where, field, value, { required = false, forbidden = [] } = {}) {
@@ -89,12 +121,22 @@ function checkText(c, where, field, value, { required = false, forbidden = [] } 
   }
   if (typeof value !== "string") { c.error(where, `«${field}» må være tekst`); return; }
   if (/<[a-z/!]/i.test(value)) c.error(where, `«${field}» inneholder HTML. Bruk ren tekst.`);
-  for (const m of value.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)) {
+  for (const m of value.matchAll(EMAIL)) {
     if (!ALLOWED_EMAILS.has(m[0].toLowerCase())) c.error(where, `«${field}» inneholder en e-postadresse som ikke er NITDs (personvern)`);
   }
   for (const m of value.matchAll(/(?<![\w+])(?:\+47 ?)?(?:\d ?){7}\d(?![\w])/g)) {
     const digits = m[0].replace(/\D/g, "").replace(/^47(?=\d{8}$)/, "");
     if (!ALLOWED_PHONES.has(digits)) c.error(where, `«${field}» inneholder et telefonnummer som ikke er NITDs (personvern)`);
+  }
+  for (const [re, what] of SECRET_PATTERNS) {
+    if (re.test(value)) c.error(where, `«${field}» ser ut til å inneholde ${what}. Hemmeligheter skal aldri i data/.`);
+  }
+  if (IPV4.test(value) || IPV6.test(value)) c.error(where, `«${field}» inneholder en IP-adresse`);
+  if (INTERNAL_HOST.test(value)) c.error(where, `«${field}» inneholder et internt vertsnavn`);
+  for (const m of value.replace(EMAIL, " ").matchAll(DOMAIN_IN_TEXT)) {
+    const host = m[1];
+    if (/^\d/.test(host)) continue;
+    if (!allowedHost(host)) c.error(where, `«${field}» nevner domenet ${host}, som ikke er godkjent (se ALLOWED_DOMAINS)`);
   }
   const lower = value.toLowerCase();
   for (const word of forbidden) {

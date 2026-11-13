@@ -122,6 +122,26 @@ test("validering: personopplysninger, HTML og forbudte ord stopper bygget", () =
   assert.equal(check("Ring 69 81 10 00 eller skriv til helpdesk@nitd.no. Ref. MO1550821 kl. 09:30."), "");
 });
 
+test("validering: hemmeligheter, IP-adresser, interne verter og ukjente domener stopper bygget", () => {
+  const comps = validateStatus(baseStatus(), newCollector(), []);
+  const check = (text, over = {}) => {
+    const c = newCollector();
+    validateIncident("2026-11-01-test", incident({ impact: text, ...over }), comps, c, []);
+    return c.errors.join("\n");
+  };
+  assert.match(check("Token ghp_" + "a".repeat(36)), /GitHub-token/);
+  assert.match(check("passord: Sommer2026"), /passord eller nøkkel/);
+  assert.match(check("-----BEGIN OPENSSH PRIVATE KEY-----"), /nøkkel eller sertifikat/);
+  assert.match(check("Nøkkel " + "Ab3".repeat(15)), /lang tilfeldig streng/);
+  assert.match(check("Serveren 10.0.0.12 svarer ikke"), /IP-adresse/);
+  assert.match(check("Feil på dc01.nitd.local"), /internt vertsnavn/);
+  assert.match(check("Se halo.example.com for detaljer"), /nevner domenet halo\.example\.com/);
+  assert.match(check("Ok tekst.", { vendorRefs: [{ vendor: "X", ref: "X1", url: "https://intern.example.com/" }] }), /ikke er et godkjent domene/);
+  assert.match(check("Ok tekst.", { vendorRefs: [{ vendor: "X", ref: "X1", url: "https://bruker:pw@status.uniweb.no/" }] }), /brukernavn eller passord/);
+  // Vanlig tekst skal gå gjennom.
+  assert.equal(check("Outlook, f.eks. på mobil, er berørt kl. 09.30. Se kundeportal.nitd.no og status.cloud.microsoft. Ref. MO1550821, versjon 2.4.1."), "");
+});
+
 test("validering: løst hendelse må ha «resolved», og vedlikehold må ha tidsrom", () => {
   const comps = validateStatus(baseStatus(), newCollector(), []);
   const c = newCollector();
