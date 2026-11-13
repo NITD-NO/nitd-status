@@ -34,6 +34,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B20 | **Leverandørstatus hentes når siden bygges**, ikke via PR. Erstatter B16. Ingen workflow skriver til repoet. Besluttet 13. nov. 2026 etter innspill fra Johannes om at siden skal være vedlikeholdsfri. | Enklere og tryggere: ingen skrivetilgang for workflows, ingen unntak i baseline. |
 | B21 | **Tjenestestatus som kort**, gruppert i «Norsk IT Drift» og «Leverandører», med navn, status og lenke til leverandørens statusside. Etiketten «Registrert av NITD» vises ikke. Leverandørens melding vises som «Microsoft melder …». Besluttet av Johannes 13. nov. 2026. | Saklig og oversiktlig. Det er opplagt at NITD står bak egne merknader. |
 | B22 | **Åpne data:** `/status.json` og `/status.csv` (Excel) med gjeldende status, i tillegg til Atom-feeden. CORS åpen, ingen personopplysninger. Besluttet av Johannes 13. nov. 2026. | Nettstedet og andre systemer kan vise status uten egen kopi. |
+| B23 | **Statusen endres bare av systemet i Cloudflare (leverandørstatus) og av NITD-ansatte (hendelser og egen vurdering).** Ingen API-tokens og ingen Claude-økter brukes til statusoppgaver. Leverandørens meldinger skrives ikke av i hendelsesloggen. Besluttet av Johannes 13. nov. 2026. | Driften av statussiden skal ikke avhenge av AI eller tokens. Mindre risiko, ingen løpende kostnad. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur

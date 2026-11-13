@@ -28,6 +28,15 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
 - Agenten får bare tokens med lesetilgang. Trengs en endring i Cloudflare: beskriv den og be Johannes om et midlertidig token, som slettes etterpå.
 - Ingen hemmeligheter i chat, kode, dokumentasjon eller prompter. Secrets ligger i GitHub Actions secrets eller miljøinnstillingene, aldri i repoet.
 
+## Hvem endrer statusen (B23, besluttet av Johannes 13. nov. 2026)
+
+- **Leverandørstatus** endres bare av systemet i Cloudflare: bygget henter offentlige kilder.
+  Ingen API-tokens, ingen Claude-økter og ingen planlagte Claude-oppgaver brukes til dette.
+- **Hendelser og NITDs vurdering** skrives av ansatte i NITD.
+- Claude skriver ikke statustekster, oppdaterer ikke hendelser og overvåker ikke leverandører.
+  Claude arbeider bare med koden til siden, og bare når Johannes ber om det.
+- Leverandørens egne meldinger skrives ikke av i hendelsesloggen. Kortet og lenken viser dem.
+
 ## Regler for innhold
 - Rolig og konkret: hva som er berørt, hva kundene bør gjøre og når neste oppdatering kommer (`nextUpdate`).
 - Ingen kundenavn, personopplysninger, interne systemnavn eller verktøynavn. Skriv «Overvåking», «Kundeportal» og «helpdesksystemet», ikke verktøyets navn.

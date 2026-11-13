@@ -11,7 +11,6 @@
   "resolved": null,
   "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være påvirket der de bruker e-post eller kalender. Telefon til Norsk IT Drift fungerer normalt.",
   "advice": "Kontakt oss på telefon 69 81 10 00. Ikke send samme e-post flere ganger. Microsoft holder forsinket e-post i opptil 48 timer og leverer den når feilen er rettet.",
-  "nextUpdate": "2026-11-13T11:00:00Z",
   "vendorRefs": [
     {
       "vendor": "Microsoft",
@@ -25,6 +24,11 @@
     }
   ],
   "updates": [
+    {
+      "time": "2026-11-13T11:10:00+01:00",
+      "source": "nitd",
+      "text": "Videre status fra Microsoft vises automatisk under Tjenestestatus, med lenke til Microsofts statusside. Hendelsen avsluttes når Microsoft melder normal drift."
+    },
     {
       "time": "2026-11-13T10:01:00Z",
       "source": "leverandor",
