@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-13T10:20:00+01:00",
+  "updated": "2026-11-13T11:05:00+01:00",
   "message": "Microsoft 365 har redusert tjeneste. E-post kan være forsinket. Kontakt oss på telefon 69 81 10 00.",
   "groups": [
     {
@@ -20,14 +20,26 @@
           "id": "kundeportal",
           "name": "Kundeportal",
           "description": "Saker og oversikt på kundeportal.nitd.no.",
-          "vendor": { "name": "Leverandøren", "public": false, "feed": "kundeportal" },
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "vendor": {
+            "name": "Leverandøren",
+            "public": false,
+            "feed": "kundeportal"
+          },
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         },
         {
           "id": "overvaking",
           "name": "Overvåking",
           "description": "Overvåking av kundenes systemer.",
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         }
       ]
     },
@@ -39,7 +51,11 @@
           "id": "microsoft-365",
           "name": "Microsoft 365",
           "description": "Exchange Online, Teams, SharePoint og OneDrive.",
-          "vendor": { "name": "Microsoft", "statusUrl": "https://status.cloud.microsoft/", "feed": "microsoft" },
+          "vendor": {
+            "name": "Microsoft",
+            "statusUrl": "https://status.cloud.microsoft/",
+            "feed": "microsoft"
+          },
           "observedStatus": {
             "state": "degraded",
             "note": "Flere kunder har problemer med Outlook og e-post.",
@@ -50,29 +66,60 @@
           "id": "sophos",
           "name": "Sophos",
           "description": "Sophos Central, endepunktbeskyttelse og brannmur.",
-          "vendor": { "name": "Sophos", "statusUrl": "https://status.sophos.com/" },
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "vendor": {
+            "name": "Sophos",
+            "statusUrl": "https://status.sophos.com/"
+          },
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         },
         {
           "id": "zyxel-nebula",
           "name": "Zyxel Nebula",
           "description": "Skybasert styring av brannmur, svitsjer og trådløst nett.",
-          "vendor": { "name": "Zyxel", "statusUrl": "https://www.nebulastatus.zyxel.com/", "feed": "zyxel-nebula" },
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "vendor": {
+            "name": "Zyxel",
+            "statusUrl": "https://www.nebulastatus.zyxel.com/",
+            "feed": "zyxel-nebula"
+          },
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         },
         {
           "id": "uniweb-webhotell",
           "name": "Webhotell (Uniweb)",
           "description": "Webhotell, databaser og DNS.",
-          "vendor": { "name": "Uniweb", "statusUrl": "https://status.uniweb.no/", "feed": "uniweb-webhotell" },
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "vendor": {
+            "name": "Uniweb",
+            "statusUrl": "https://status.uniweb.no/",
+            "feed": "uniweb-webhotell"
+          },
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         },
         {
           "id": "uniweb-epost",
           "name": "E-post (Uniweb)",
           "description": "E-post på eget domene, webmail og DNS.",
-          "vendor": { "name": "Uniweb", "statusUrl": "https://status.uniweb.no/", "feed": "uniweb-epost" },
-          "observedStatus": { "state": "operational", "note": "", "updated": "2026-11-13T08:45:00+01:00" }
+          "vendor": {
+            "name": "Uniweb",
+            "statusUrl": "https://status.uniweb.no/",
+            "feed": "uniweb-epost"
+          },
+          "observedStatus": {
+            "state": "operational",
+            "note": "",
+            "updated": "2026-11-13T08:45:00+01:00"
+          }
         }
       ]
     }
