@@ -302,7 +302,7 @@ godkjent.** Minimumskrav:
 
 | Risiko | Konsekvens | Tiltak |
 |---|---|---|
-| **Samme leverandør i bunn.** Statussiden og nettstedet ligger begge hos Cloudflare (Pages og DNS for norskitdrift.no). | Ved feil hos Cloudflare går begge ned samtidig. | **Kjent svakhet, akseptert nå.** Senere: vurder speil hos en annen leverandør og/eller statusdomene i en annen DNS-sone. Kontaktinfo (telefon) står også i signatur, avtaler og kundeportal. |
+| **Samme leverandør i bunn.** Statussiden og nettstedet ligger begge hos Cloudflare (Pages og DNS for norskitdrift.no). | Ved feil hos Cloudflare går begge ned samtidig. | **Kjent svakhet, akseptert permanent** (Johannes, 13. nov. 2026). Ikke speil. Kontaktinfo (telefon) står også i signatur, avtaler og kundeportal. |
 | Statussiden ligger under norskitdrift.no | Feil i DNS-sonen tar også statussiden | Som over. DNSSEC og to eiere på Cloudflare-kontoen. |
 | Feil alarm fra egne målinger | Unødig uro hos kunder | B7: manuell vurdering før «Registrert av NITD». |
 | Utdatert side under en hendelse | Tap av tillit | `nextUpdate` på hver hendelse, advarsel i bygget når den er passert, synlig «Sist oppdatert». |
@@ -326,7 +326,7 @@ godkjent.** Minimumskrav:
 7. ~~ACT-02 for automatisk PR.~~ **Besluttet (B16):** PR + automerge for bare `vendorStatus`.
    Johannes registrerer unntak for ACT-02 og automerge i `baseline.yaml`.
 8. ~~Daglig bygg.~~ **Besluttet (B17):** hver time.
-9. **Speil hos annen leverandør** (risiko 1): når skal det vurderes?
+9. ~~Speil hos annen leverandør.~~ **Besluttet:** ikke aktuelt. Cloudflare-avhengigheten aksepteres.
 10. **Startdata**: skal Microsoft-hendelsen fra 12.–13. nov. ligge med som første
     hendelse (sporbarhet), eller starter vi tomt?
 
