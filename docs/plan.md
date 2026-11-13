@@ -27,6 +27,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B13 | Komponenten heter **«Zyxel Nebula»**. Leverandørstatus fra nebulastatus.zyxel.com. Feil på selve utstyret vises som «Registrert av NITD». Besluttet av Johannes 13. nov. 2026. | Navnet sier presist hva leverandørstatusen gjelder. |
 | B14 | **Akuttlinjen** («ring 69 81 10 00 og trykk 9» ved aktivt angrep eller akutt driftsstans) står alltid i kontaktboksen, med lenke til norskitdrift.no/under-angrep. Besluttet av Johannes 13. nov. 2026. | Fast tekst, ingen vedlikehold. Samme tilbud som på nettstedet. |
 | B15 | Kontaktboksen viser **telefon, kundeportal og helpdesk@nitd.no**. Alle henvendelser havner i kundeportalen. Besluttet av Johannes 13. nov. 2026. | Kunden velger kanal; telefon står først fordi e-post kan være nede ved feil hos Microsoft. |
+| B16 | **Automatisk leverandørstatus:** planlagt GitHub Actions-jobb lager PR og merger selv når sjekkene er grønne og PR-en bare endrer `vendorStatus`. Alt annet krever Johannes. Se 7.1. Besluttet av Johannes 13. nov. 2026. | Ingen vedlikehold, også om natten. Vakt i koden begrenser hva som kan merges uten menneske. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -238,16 +239,36 @@ Mapping fra leverandørstatus til våre tilstander (forslag, brukes i senere aut
 
 ## 7. Senere (planlagt, ikke bygget)
 
-### 7.1 Automatisk henting fra leverandører (GitHub Actions → PR)
+### 7.1 Automatisk henting fra leverandører (GitHub Actions → PR → automerge)
 
-- Planlagt workflow (f.eks. hvert 10. minutt i arbeidstid, hvert 30. ellers) henter
-  Microsoft, Uniweb og Zyxel, mapper status etter tabellen over og oppdaterer
-  **bare `vendorStatus`** i `status.json`. Endring → PR med kort norsk sammendrag.
-- Aldri `observedStatus`, aldri merge (B7, BRA-01).
-- Tillatelser: `contents: write` og `pull-requests: write` kun i den jobben. Krever at
-  ACT-02 (workflows kan ikke opprette PR) får et registrert unntak, **eller** at
-  PR-en lages av Claude-økten. Beslutning hos Johannes.
-- Ingen secrets trengs: alle kilder er offentlige.
+**Besluttet (B16).** Neste leveranse, siden B10 krever at leverandørstatus ikke vedlikeholdes for hånd.
+
+- Planlagt workflow (hvert 10. minutt kl. 07–22, hvert 30. ellers) henter Microsoft,
+  Uniweb, Zyxel og kundeportalens feed, mapper status etter tabellen over og oppdaterer
+  **bare `vendorStatus`** (og `updated`) i `status.json`. Ingen endring → ingenting skjer.
+- Endring → branch `auto/leverandor-<tid>` → PR med kort norsk sammendrag → automerge.
+- **Vakt i koden:** et eget skript sammenligner `status.json` før og etter og stopper
+  hvis noe annet enn `vendorStatus`-felt er endret, eller hvis andre filer er endret.
+  Da merges ingenting, og PR-en blir stående til Johannes.
+- Aldri `observedStatus`, aldri hendelsesfiler (B7). Ny hendelse skrives av et menneske.
+- Teksten i `vendorStatus.note` lages fra faste norske maler per tilstand («Microsoft
+  melder redusert tjeneste. Se Microsofts statusside.»), ikke maskinoversatt fritekst.
+  Leverandørens tittel og tekst publiseres ikke direkte (validering, tone, språk).
+- Leverandørkilden nede eller ugyldig svar → ingen endring, advarsel i jobbloggen.
+  Siden viser da sist kjente status med tidspunkt («oppdatert kl. …»).
+- Tillatelser: `contents: write` og `pull-requests: write` bare i denne jobben.
+  Ingen secrets: alle kilder er offentlige.
+
+Tekniske forbehold som må løses i den PR-en:
+
+- PR-er laget med `GITHUB_TOKEN` starter ikke andre workflows. Jobben kjører derfor
+  `scripts/sjekk.sh` selv før den lager PR-en, og merger selv (squash) når sjekken
+  og vakten er grønne.
+- GitHub Free håndhever ikke branch protection i private repoer, så GitHubs innebygde
+  automerge kan ikke brukes. Jobben merger med `gh pr merge --squash` i stedet.
+- Krever registrerte unntak i `nitd-repo-standard/baseline.yaml`: **ACT-02**
+  (workflow kan opprette PR) og automerge uten menneskelig godkjenning for denne
+  branchen. Unntakene registreres av Johannes i standardrepoet.
 
 ### 7.2 Sikkerhetsvarsler via webhook (Sophos, Zyxel, Microsoft)
 
@@ -295,7 +316,8 @@ godkjent.** Minimumskrav:
 4. ~~Akuttlinjen.~~ **Besluttet (B14):** alltid i kontaktboksen.
 5. ~~Helpdesk-e-post.~~ **Besluttet (B15):** alle tre kanaler vises.
 6. ~~Engelsk.~~ **Besluttet:** bare norsk.
-7. **ACT-02** for automatisk PR fra workflow (7.1): unntak, eller skal Claude-økten lage PR-ene?
+7. ~~ACT-02 for automatisk PR.~~ **Besluttet (B16):** PR + automerge for bare `vendorStatus`.
+   Johannes registrerer unntak for ACT-02 og automerge i `baseline.yaml`.
 8. **Daglig bygg** med deploy hook (7.3): ja/nei.
 9. **Speil hos annen leverandør** (risiko 1): når skal det vurderes?
 10. **Startdata**: skal Microsoft-hendelsen fra 12.–13. nov. ligge med som første
