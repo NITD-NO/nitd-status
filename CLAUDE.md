@@ -34,8 +34,9 @@ Branch → pull request → kvalitetssjekk grønn → merge → Cloudflare Pages
   Bygget stopper på ord i `config/forbudte-ord.txt`, e-post/telefon som ikke er NITDs, hemmeligheter, IP-adresser,
   interne vertsnavn og domener som ikke er godkjent (`ALLOWED_DOMAINS` i `scripts/lib/model.mjs`).
 - Kontakt ved hendelse: telefon 69 81 10 00 (akutt: trykk 9), https://kundeportal.nitd.no og helpdesk@nitd.no. Alt havner i kundeportalen.
-- `observedStatus` («Registrert av NITD») settes alltid manuelt etter en vurdering, aldri automatisk fra målinger.
-- `vendorStatus` er det leverandøren selv melder, med lenke og referanse. Ikke gjett.
+- `observedStatus` (NITDs egen vurdering) settes alltid manuelt, aldri automatisk fra målinger.
+- Leverandørstatus hentes automatisk når siden bygges (`vendor.feed`, `scripts/lib/vendors.mjs`). Den settes aldri for hånd.
+- Språk: saklig og faglig, som i en SLA-rapport. Korte setninger, ingen muntlige uttrykk.
 - Tider lagres med tidssone (ISO 8601). Microsoft oppgir UTC. Siden viser norsk tid.
 - Hendelser slettes aldri. De arkiveres (vises i 90 dager, ligger i repoet etter det).
 - Gjennomgangen etter en hendelse skrives i HaloPSA og publiseres ikke. Ingen interne saksnumre i `data/`.

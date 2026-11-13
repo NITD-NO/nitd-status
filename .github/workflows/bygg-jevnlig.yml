@@ -1,0 +1,37 @@
+# Bygger statussiden på nytt med jevne mellomrom, slik at leverandørstatus, arkivet (90 dager)
+# og planlagt vedlikehold er oppdatert uten endringer i data (B17, B20).
+# Kaller Cloudflare Pages-deploy hook. URL-en er en hemmelighet i miljøet «production».
+# Mangler secreten, avsluttes jobben uten feil.
+#
+# Cloudflare Pages Free har 500 bygg per måned. Annenhver time gir ca. 372 bygg,
+# og gir rom for vanlige endringer. Hyppigere bygg krever Pages Pro (docs/plan.md B17).
+name: Bygg jevnlig
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: bygg-jevnlig
+  cancel-in-progress: false
+
+jobs:
+  bygg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Start bygg i Cloudflare Pages
+        env:
+          HOOK: ${{ secrets.CF_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::notice::CF_DEPLOY_HOOK_URL er ikke satt i miljøet production. Hopper over."
+            exit 0
+          fi
+          curl -fsS -X POST --max-time 30 -o /dev/null "$HOOK"
+          echo "Bygg startet."

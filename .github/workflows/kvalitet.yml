@@ -33,7 +33,7 @@ jobs:
           cache-dependency-path: scripts/qa/package-lock.json
 
       - name: Bygg
-        run: node scripts/build.mjs
+        run: node scripts/build.mjs --offline
 
       # Feiler installasjonen, skal ingen ukjente pakker kjøres.
       - name: Installer testverktøy (låste versjoner)

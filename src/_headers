@@ -21,6 +21,20 @@
   Access-Control-Allow-Origin: *
   Cross-Origin-Resource-Policy: cross-origin
 
+# Åpne data for nettstedet og andre systemer (bare offentlig status, ingen personopplysninger).
+/status.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: no-cache
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin
+
+/status.csv
+  Content-Type: text/csv; charset=utf-8
+  Content-Disposition: attachment; filename="nitd-driftsstatus.csv"
+  Cache-Control: no-cache
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin
+
 # Forhåndsvisninger og pages.dev-adressen skal ikke indekseres. Kanonisk adresse er status.norskitdrift.no.
 https://:project.pages.dev/*
   X-Robots-Tag: noindex

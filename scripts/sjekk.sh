@@ -10,7 +10,7 @@ echo "== Tester =="
 node --test scripts/test.mjs
 
 echo "== Bygger dist/ =="
-node scripts/build.mjs
+node scripts/build.mjs --offline
 
 echo "== Kontrollerer at interne filer ikke er med i dist/ =="
 if find dist -name '*.md' -o -name '*.mjs' -o -name '*.sh' -o -name 'package*.json' | grep -q .; then

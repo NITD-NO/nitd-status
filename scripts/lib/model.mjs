@@ -7,6 +7,7 @@ export const STATE_LABEL = {
   recovering: "Bedring",
   degraded: "Redusert",
   outage: "Nede",
+  unknown: "Ukjent",
 };
 export const RANK = Object.fromEntries(STATES.map((s, i) => [s, i]));
 
@@ -17,7 +18,9 @@ export const INCIDENT_STATUS = {
   vedlikehold: { planlagt: "Planlagt", pagaende: "Pågår", fullfort: "Fullført" },
 };
 export const CLOSED = { hendelse: "lost", vedlikehold: "fullfort" };
-export const SOURCE_LABEL = { nitd: "NITD", leverandor: "Leverandør" };
+export const SOURCE_LABEL = { nitd: "Norsk IT Drift", leverandor: "Leverandør" };
+// Leverandørkilder som hentes automatisk når siden bygges (scripts/lib/vendors.mjs).
+export const FEED_NAMES = ["microsoft", "zyxel-nebula", "uniweb-webhotell", "uniweb-epost", "kundeportal"];
 
 // Telefon og e-post som kan stå i publisert tekst. Alt annet stopper bygget.
 const ALLOWED_PHONES = new Set(["69811000"]);
@@ -65,16 +68,17 @@ export function worst(a, b) {
 }
 
 /** Tilstand som vises for en komponent, og hvor opplysningen kommer fra. */
+// `vendorStatus` settes av bygget (hentet fra leverandøren), aldri i data/.
+// «unknown» betyr at kilden ikke svarte. Det teller ikke i samlet status.
 export function effective(component) {
-  const v = component.vendorStatus?.state || "operational";
+  const rawV = component.vendorStatus?.state || "operational";
+  const v = rawV === "unknown" ? "operational" : rawV;
   const o = component.observedStatus?.state || "operational";
-  const state = worst(v, o);
+  let state = worst(v, o);
+  if (state === "operational" && rawV === "unknown") state = "unknown";
   let source = null;
-  if (state !== "operational") {
-    if (RANK[v] === RANK[o]) source = "Meldt av leverandør og registrert av NITD";
-    else if (RANK[v] > RANK[o]) source = "Meldt av leverandør";
-    else source = "Registrert av NITD";
-  }
+  if (RANK[v] > 0 && RANK[v] >= RANK[o]) source = "leverandor";
+  else if (RANK[o] > 0) source = "nitd";
   return { state, source };
 }
 
@@ -188,14 +192,20 @@ export function validateStatus(status, c, forbidden) {
       checkText(c, cw, "name", comp.name, { required: true, forbidden });
       checkText(c, cw, "description", comp.description, { forbidden });
       if (comp.vendor != null) {
-        checkText(c, cw, "vendor.name", comp.vendor.name, { required: true, forbidden });
-        checkUrl(c, cw, "vendor.statusUrl", comp.vendor.statusUrl, false);
+        const v = comp.vendor;
+        if (!isObj(v)) { c.error(cw, "«vendor» må være et objekt"); }
+        else {
+          checkText(c, cw, "vendor.name", v.name, { required: true, forbidden });
+          if (v.public !== false) checkUrl(c, cw, "vendor.statusUrl", v.statusUrl, true);
+          else if (v.statusUrl) c.error(cw, "«vendor.statusUrl» skal ikke settes når «vendor.public» er false (verktøynavn skal ikke vises)");
+          if (v.feed != null && !FEED_NAMES.includes(v.feed)) c.error(cw, `«vendor.feed» må være en av ${FEED_NAMES.join(", ")}`);
+          if (v.public != null && typeof v.public !== "boolean") c.error(cw, "«vendor.public» må være true eller false");
+        }
       }
-      if (!("vendorStatus" in comp) || !("observedStatus" in comp)) {
-        c.error(cw, "både «vendorStatus» og «observedStatus» må finnes (bruk null når det ikke finnes en kilde)");
+      if ("vendorStatus" in comp) {
+        c.error(cw, "«vendorStatus» settes ikke for hånd. Den hentes automatisk fra leverandøren (vendor.feed), se B10.");
       }
-      if (comp.vendorStatus != null && comp.vendor == null) c.error(cw, "«vendorStatus» krever «vendor»");
-      checkStatusField(c, cw, "vendorStatus", comp.vendorStatus, forbidden, { vendor: true });
+      if (!("observedStatus" in comp)) c.error(cw, "«observedStatus» mangler");
       checkStatusField(c, cw, "observedStatus", comp.observedStatus, forbidden);
     }
   }
@@ -264,7 +274,7 @@ export function validateIncident(id, inc, components, c, forbidden) {
 export function consistencyWarnings(status, incidents, now, c) {
   const active = incidents.filter(i => i.type === "hendelse" && i.status !== "lost");
   for (const g of status.groups || []) for (const comp of g.components || []) {
-    const { state } = effective(comp);
+    const state = comp.observedStatus?.state || "operational";
     if (state !== "operational" && !active.some(i => i.components?.includes(comp.id))) {
       c.warn(`data/status.json › ${comp.id}`, `tilstand «${STATE_LABEL[state]}» uten en pågående hendelse som peker på komponenten`);
     }

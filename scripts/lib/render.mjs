@@ -80,9 +80,9 @@ ${body}
   </main>
   <footer class="site-footer">
     <div class="wrap">
-      <p>Statusen oppdateres av Norsk IT Drift. Alle tider er norsk tid.${updated ? ` Sist oppdatert ${time(updated)}.` : ""}</p>
-      <p>Siden bruker ingen informasjonskapsler og ingen sporing.</p>
-      <p><a href="https://norskitdrift.no/">norskitdrift.no</a> · <a href="https://norskitdrift.no/personvern">Personvern</a> · <a href="https://norskitdrift.no/tilgjengelighet">Tilgjengelighet</a> · <a href="/arkiv">Arkiv</a> · <a href="/feed.xml">Abonner (Atom)</a></p>
+      <p>Statussiden driftes av Norsk IT Drift AS. Alle tidspunkter er oppgitt i norsk tid.${updated ? ` Sist oppdatert ${time(updated)}.` : ""}</p>
+      <p>Siden bruker ikke informasjonskapsler eller sporing.</p>
+      <p><a href="https://norskitdrift.no/">norskitdrift.no</a> · <a href="https://norskitdrift.no/personvern">Personvern</a> · <a href="https://norskitdrift.no/tilgjengelighet">Tilgjengelighet</a> · <a href="/arkiv">Arkiv</a> · <a href="/feed.xml">Atom-feed</a> · <a href="/status.json">JSON</a> · <a href="/status.csv">CSV</a></p>
     </div>
   </footer>
 </body>
@@ -92,16 +92,26 @@ ${body}
 
 function contactBlock() {
   return `<section class="card contact" aria-labelledby="kontakt-tittel">
-      <h2 id="kontakt-tittel">Kontakt ved hendelse</h2>
-      <p>Ring <a class="phone" href="tel:${PHONE.tel}">${PHONE.text}</a>, meld sak i <a href="${PORTAL}">kundeportalen</a> eller send e-post til <a href="mailto:${EMAIL}">${EMAIL}</a>. Alle henvendelser havner i kundeportalen.</p>
-      <p class="urgent"><strong>Ved aktivt angrep eller akutt driftsstans:</strong> ring ${PHONE.text} og trykk <strong>9</strong>. <a href="https://norskitdrift.no/under-angrep">Mer om akuttlinjen</a></p>
+      <h2 id="kontakt-tittel">Kontakt ved driftshendelser</h2>
+      <dl class="contact-list">
+        <dt>Telefon</dt><dd><a class="phone" href="tel:${PHONE.tel}">${PHONE.text}</a></dd>
+        <dt>Kundeportal</dt><dd><a href="${PORTAL}">kundeportal.nitd.no</a></dd>
+        <dt>E-post</dt><dd><a href="mailto:${EMAIL}">${EMAIL}</a></dd>
+      </dl>
+      <p class="meta">Alle henvendelser registreres i kundeportalen.</p>
+      <p class="urgent"><strong>Pågående dataangrep eller kritisk driftsavbrudd:</strong> ring ${PHONE.text} og velg 9. <a href="https://norskitdrift.no/under-angrep">Om akuttlinjen</a></p>
     </section>`;
 }
 
 function subscribeBlock() {
   return `<section class="card subscribe" aria-labelledby="abonner-tittel">
-      <h2 id="abonner-tittel">Abonner</h2>
-      <p>Få nye hendelser og oppdateringer i en feedleser (Outlook, Teams, Feedly o.l.), uten innlogging: <a href="/feed.xml">${SITE}/feed.xml</a></p>
+      <h2 id="abonner-tittel">Abonnement og data</h2>
+      <p>Hendelser og planlagt vedlikehold publiseres som Atom-feed. Feeden kan legges inn i Outlook, Teams eller en annen feedleser uten innlogging.</p>
+      <ul class="data-links">
+        <li><a href="/feed.xml">Atom-feed</a> <span class="meta">${SITE}/feed.xml</span></li>
+        <li><a href="/status.json">Gjeldende status som JSON</a> <span class="meta">for bruk i andre systemer</span></li>
+        <li><a href="/status.csv">Gjeldende status som CSV</a> <span class="meta">kan åpnes i Excel</span></li>
+      </ul>
     </section>`;
 }
 
@@ -110,7 +120,7 @@ function vendorRefs(inc) {
   const refs = inc.vendorRefs.map(r => r.url
     ? `<a href="${esc(r.url)}">${esc(r.vendor)} ${esc(r.ref)}</a>`
     : `${esc(r.vendor)} ${esc(r.ref)}`).join(", ");
-  return `<p class="meta">Leverandørens referanse: ${refs}</p>`;
+  return `<p class="meta">Referanse hos leverandør: ${refs}</p>`;
 }
 
 function componentNames(inc, components) {
@@ -126,7 +136,7 @@ function updatesList(inc, headingLevel = 3, limit = Infinity) {
     : "";
   const items = sorted.slice(0, limit).map(u => `
           <li>
-            <p class="log-meta">${time(u.time)} <span class="log-source">· ${esc(SOURCE_LABEL[u.source])}</span></p>
+            <p class="log-meta">${time(u.time)}${u.source === "leverandor" ? ` <span class="log-source">· ${esc(inc.vendorRefs?.[0]?.vendor || SOURCE_LABEL.leverandor)}</span>` : ""}</p>
             <p>${esc(u.text)}</p>
           </li>`).join("");
   return `<h${headingLevel} class="log-title">${limit < Infinity && sorted.length > limit ? "Siste oppdateringer" : "Hendelseslogg"} <span class="meta-inline">(nyeste først)</span></h${headingLevel}>
@@ -138,7 +148,7 @@ function incidentWhen(inc) {
   if (inc.type === "vedlikehold") {
     return `<p class="meta">Tidsrom: ${time(inc.scheduledStart)} til ${time(inc.scheduledEnd)}</p>`;
   }
-  return `<p class="meta">Startet ${time(inc.started)}. Registrert av NITD ${time(inc.detected)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.</p>`;
+  return `<p class="meta">Startet ${time(inc.started)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.</p>`;
 }
 
 function incidentDetails(inc, components, { headingLevel = 3, limit = Infinity } = {}) {
@@ -146,7 +156,7 @@ function incidentDetails(inc, components, { headingLevel = 3, limit = Infinity }
   return `${incidentWhen(inc)}
         <dl class="facts">
           <dt>Berørt</dt><dd>${esc(componentNames(inc, components))}. ${esc(inc.impact)}</dd>
-          ${inc.advice && !closed ? `<dt>Hva du bør gjøre</dt><dd>${esc(inc.advice)}</dd>` : ""}
+          ${inc.advice && !closed ? `<dt>Anbefalt tiltak</dt><dd>${esc(inc.advice)}</dd>` : ""}
           ${inc.nextUpdate && !closed ? `<dt>Neste oppdatering</dt><dd>${time(inc.nextUpdate)}</dd>` : ""}
         </dl>
         ${vendorRefs(inc)}
@@ -162,43 +172,52 @@ function incidentCard(inc, components, { full = true, headingLevel = 3, limit = 
       </article>`;
 }
 
-function componentItem(comp) {
-  const { state, source } = effective(comp);
-  const notes = [];
-  const v = comp.vendorStatus, o = comp.observedStatus;
-  if (v && v.state !== "operational") {
-    const refs = v.refs?.length ? ` Referanse: ${v.refs.map(esc).join(", ")}.` : "";
-    notes.push(`<p><strong>Leverandøren melder:</strong> ${esc(v.note)}${refs} <a href="${esc(v.url)}">Se ${esc(comp.vendor.name)}s statusside</a> (oppdatert ${time(v.updated)}).</p>`);
+const VENDOR_TEXT = {
+  recovering: "melder at tjenesten er i bedring.",
+  degraded: "melder redusert tjeneste.",
+  outage: "melder driftsavbrudd.",
+};
+
+function componentCard(comp) {
+  const { state } = effective(comp);
+  const v = comp.vendorStatus, o = comp.observedStatus, vendor = comp.vendor;
+  const shown = vendor && vendor.public !== false;
+  const lines = [];
+  if (v && VENDOR_TEXT[v.state]) {
+    lines.push(`<p>${esc(shown ? vendor.name : "Leverandøren")} ${VENDOR_TEXT[v.state]}</p>`);
   }
-  if (o && o.state !== "operational" && o.note) {
-    notes.push(`<p><strong>NITD registrerer:</strong> ${esc(o.note)}</p>`);
+  if (o && o.state !== "operational" && o.note) lines.push(`<p>${esc(o.note)}</p>`);
+  if (v && v.state === "unknown" && shown) {
+    lines.push(`<p class="meta">Status fra ${esc(vendor.name)} er ikke tilgjengelig. Se leverandørens statusside.</p>`);
   }
-  if (state === "operational" && comp.vendor?.statusUrl) {
-    notes.push(`<p class="meta"><a href="${esc(comp.vendor.statusUrl)}">${esc(comp.vendor.name)}s egen statusside</a></p>`);
-  }
+  if (shown && !vendor.feed) lines.push(`<p class="meta">Status fra ${esc(vendor.name)} hentes ikke automatisk.</p>`);
+  const foot = [];
+  if (v && v.state !== "unknown") foot.push(`Hentet ${time(v.fetched, { year: false })}`);
+  if (shown && vendor.statusUrl) foot.push(`<a href="${esc(vendor.statusUrl)}">Statusside hos ${esc(vendor.name)}</a>`);
   return `<li class="component component--${state}">
           <div class="component-head">
             <h4>${esc(comp.name)}</h4>
             ${pill(state)}
           </div>
           ${comp.description ? `<p class="meta">${esc(comp.description)}</p>` : ""}
-          ${source ? `<p class="source">${esc(source)}</p>` : ""}
-          ${notes.join("\n          ")}
+          ${lines.join("\n          ")}
+          ${foot.length ? `<p class="component-foot">${foot.join(" · ")}</p>` : ""}
         </li>`;
 }
 
 const HEADLINE = {
-  operational: "Alle tjenester virker normalt",
-  recovering: "Noen tjenester er i bedring",
-  degraded: "Noen tjenester er redusert",
-  outage: "Driftsstans",
+  operational: "Alle tjenester fungerer normalt",
+  unknown: "Alle tjenester fungerer normalt",
+  recovering: "Tjenestene er i bedring",
+  degraded: "Én eller flere tjenester har redusert funksjon",
+  outage: "Driftsavbrudd",
 };
 
 export function overall(status) {
   let s = "operational";
   for (const g of status.groups) for (const c of g.components) {
     const e = effective(c).state;
-    if (RANK[e] > RANK[s]) s = e;
+    if (e !== "unknown" && RANK[e] > RANK[s]) s = e;
   }
   return s;
 }
@@ -232,12 +251,11 @@ export function renderIndex({ status, incidents, components, now, version }) {
     </section>` : ""}
 
     <section aria-labelledby="komponenter-tittel">
-      <h2 id="komponenter-tittel">Tjenester</h2>
-      <p class="meta">Status viser det dårligste av det leverandøren melder og det NITD selv registrerer.</p>
+      <h2 id="komponenter-tittel">Tjenestestatus</h2>
       ${status.groups.map(g => `<div class="group">
         <h3 class="group-title" id="gruppe-${esc(g.id)}">${esc(g.name)}</h3>
         <ul class="components" aria-labelledby="gruppe-${esc(g.id)}">
-        ${g.components.map(componentItem).join("\n        ")}
+        ${g.components.map(componentCard).join("\n        ")}
         </ul>
       </div>`).join("\n      ")}
     </section>
@@ -248,14 +266,14 @@ export function renderIndex({ status, incidents, components, now, version }) {
       <h2 id="siste-tittel">Siste 7 dager</h2>
       ${recent.length
         ? recent.map(i => incidentCard(i, components, { full: false })).join("\n      ")
-        : `<p>Ingen avsluttede hendelser siste 7 dager.</p>`}
-      <p><a href="/arkiv">Se arkivet for de siste 90 dagene</a></p>
+        : `<p>Ingen avsluttede hendelser de siste 7 dagene.</p>`}
+      <p><a href="/arkiv">Arkiv for de siste 90 dagene</a></p>
     </section>
 
     ${subscribeBlock()}`;
   return layout({
     title: "Driftsstatus – Norsk IT Drift",
-    description: "Driftsstatus for Norsk IT Drift: egne tjenester og leverandører som Microsoft 365. Pågående hendelser, planlagt vedlikehold og historikk.",
+    description: "Driftsstatus for Norsk IT Drift og leverandørene Microsoft 365, Sophos, Zyxel og Uniweb. Pågående hendelser, planlagt vedlikehold og historikk.",
     path: "/", body, updated: status.updated, version,
   });
 }
@@ -297,7 +315,7 @@ export function render404({ status, version }) {
   const body = `
     <h1>Fant ikke siden</h1>
     <p class="lead">Adressen finnes ikke på statussiden.</p>
-    <p><a href="/">Gå til driftsstatus</a></p>`;
+    <p><a href="/">Til driftsstatus</a></p>`;
   return layout({ title: "Fant ikke siden – Driftsstatus – Norsk IT Drift", description: "Siden finnes ikke.", path: "/404", body, updated: status.updated, version });
 }
 

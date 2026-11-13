@@ -9,6 +9,9 @@ import { createHash } from "node:crypto";
 import { newCollector, validateStatus, validateIncident, consistencyWarnings, CLOSED } from "./lib/model.mjs";
 import { renderIndex, renderIncident, renderArchive, render404 } from "./lib/render.mjs";
 import { renderFeed } from "./lib/feed.mjs";
+import { renderStatusJson, renderStatusCsv } from "./lib/export.mjs";
+import { fetchVendors, offlineVendors } from "./lib/vendors.mjs";
+import { overall } from "./lib/render.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -69,7 +72,16 @@ export function published(incidents, now) {
   });
 }
 
-export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write = true, log = console } = {}) {
+/** Leverandørkildene som brukes i status.json. */
+export function feedsIn(status) {
+  return [...new Set((status?.groups || []).flatMap(g => g.components).map(c => c.vendor?.feed).filter(Boolean))];
+}
+
+/**
+ * Bygger siden. `vendors` er hentet leverandørstatus ({ feed: { state, fetched } }).
+ * Uten `vendors` regnes alle kilder som utilgjengelige («Ukjent»).
+ */
+export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write = true, log = console, vendors = null } = {}) {
   const { status, components, incidents, collector: c } = load({ dataDir, now });
   for (const w of c.warnings) log.warn(`ADVARSEL ${w}`);
   if (c.errors.length) {
@@ -77,9 +89,16 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
     log.error(`\n${c.errors.length} feil i data. Ingenting er bygget.`);
     return { ok: false, errors: c.errors, warnings: c.warnings };
   }
+  // Hentet leverandørstatus legges på komponentene (bare i minnet, aldri i data/).
+  const v = vendors || offlineVendors(feedsIn(status), now);
+  for (const g of status.groups) for (const comp of g.components) {
+    if (comp.vendor?.feed) comp.vendorStatus = v[comp.vendor.feed] || { state: "unknown", fetched: now.toISOString() };
+  }
   const visible = published(deriveMaintenance(incidents, now), now);
+  const vendorStates = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x.state]));
   const version = createHash("sha256")
-    .update(JSON.stringify(status)).update(JSON.stringify(visible)).digest("hex").slice(0, 16);
+    .update(JSON.stringify(status, (k, val) => (k === "fetched" ? undefined : val)))
+    .update(JSON.stringify(visible)).update(JSON.stringify(vendorStates)).digest("hex").slice(0, 16);
   const pages = new Map();
   pages.set("index.html", renderIndex({ status, incidents: visible, components, now, version }));
   pages.set("arkiv.html", renderArchive({ incidents: visible, components, status, version }));
@@ -87,6 +106,8 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
   for (const inc of visible) pages.set(`hendelser/${inc.id}.html`, renderIncident({ inc, components, status, version }));
   pages.set("feed.xml", renderFeed({ incidents: visible, components, status }));
   pages.set("versjon.json", JSON.stringify({ version, updated: status.updated }) + "\n");
+  pages.set("status.json", renderStatusJson({ status, incidents: visible, overallState: overall(status), now }));
+  pages.set("status.csv", renderStatusCsv({ status }));
 
   if (write) {
     rmSync(outDir, { recursive: true, force: true });
@@ -104,7 +125,11 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const now = process.env.BUILD_TIME ? new Date(process.env.BUILD_TIME) : new Date();
   const write = !process.argv.includes("--check");
-  const r = build({ now, write });
+  // --offline (eller STATUS_OFFLINE=1): ingen nettkall, leverandørstatus blir «Ukjent». Brukes i tester og CI.
+  const offline = !write || process.argv.includes("--offline") || process.env.STATUS_OFFLINE === "1";
+  const pre = load({ now });
+  const vendors = offline || pre.collector.errors.length ? null : await fetchVendors(feedsIn(pre.status), now);
+  const r = build({ now, write, vendors });
   if (!r.ok) process.exit(1);
   if (!write) console.log("Data er gyldige.");
 }

@@ -9,8 +9,8 @@
   "started": "2026-11-12T19:26:00+01:00",
   "detected": "2026-11-12T19:26:00+01:00",
   "resolved": null,
-  "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være berørt der de bruker e-post eller kalender. Telefon til Norsk IT Drift virker normalt.",
-  "advice": "Ring oss på 69 81 10 00 ved henvendelser eller driftsstans. Ikke send samme e-post flere ganger. Forsinket e-post holdes hos Microsoft i opptil 48 timer og blir levert når feilen er rettet.",
+  "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være påvirket der de bruker e-post eller kalender. Telefon til Norsk IT Drift fungerer normalt.",
+  "advice": "Kontakt oss på telefon 69 81 10 00. Ikke send samme e-post flere ganger. Microsoft holder forsinket e-post i opptil 48 timer og leverer den når feilen er rettet.",
   "nextUpdate": "2026-11-13T10:00:00Z",
   "vendorRefs": [
     {
@@ -78,7 +78,7 @@
     {
       "time": "2026-11-12T19:26:00+01:00",
       "source": "nitd",
-      "text": "Vi registrerer problemer med Outlook og Exchange Online hos flere kunder. Forstyrrelsen starter (Microsofts starttidspunkt)."
+      "text": "Vi registrerer problemer med Outlook og Exchange Online hos flere kunder. Forstyrrelsen startet kl. 19:26 ifølge Microsoft."
     }
   ]
 }

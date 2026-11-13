@@ -16,13 +16,13 @@ function entryText(inc, components) {
     `Berørt: ${names}. ${inc.impact}`,
   ];
   if (inc.type === "vedlikehold") lines.push(`Tidsrom: ${fmt(inc.scheduledStart)} til ${fmt(inc.scheduledEnd)}`);
-  if (inc.advice) lines.push(`Hva du bør gjøre: ${inc.advice}`);
+  if (inc.advice) lines.push(`Anbefalt tiltak: ${inc.advice}`);
   if (inc.nextUpdate && !inc.resolved) lines.push(`Neste oppdatering: ${fmt(inc.nextUpdate)}`);
   lines.push("", "Hendelseslogg (nyeste først):");
   for (const u of [...inc.updates].sort((a, b) => Date.parse(b.time) - Date.parse(a.time))) {
     lines.push(`${fmt(u.time)} (${SOURCE_LABEL[u.source]}): ${u.text}`);
   }
-  lines.push("", "Kontakt ved hendelse: 69 81 10 00 eller https://kundeportal.nitd.no");
+  lines.push("", "Kontakt ved driftshendelser: telefon 69 81 10 00, https://kundeportal.nitd.no eller helpdesk@nitd.no");
   return lines.join("\n");
 }
 
