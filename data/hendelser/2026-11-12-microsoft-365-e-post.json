@@ -1,0 +1,67 @@
+{
+  "type": "hendelse",
+  "title": "Forstyrrelser i Microsoft 365 (e-post)",
+  "status": "pagaende",
+  "components": ["microsoft-365", "helpdesk"],
+  "started": "2026-11-12T19:26:00+01:00",
+  "resolved": null,
+  "impact": "Outlook og Exchange Online er ustabile, og e-post kan bli forsinket. Teams og SharePoint kan også være berørt der de bruker e-post eller kalender. Telefon til Norsk IT Drift virker normalt.",
+  "advice": "Ring oss på 69 81 10 00 ved henvendelser eller driftsstans. Ikke send samme e-post flere ganger. Den blir levert når feilen er rettet.",
+  "nextUpdate": "2026-11-13T08:30:00Z",
+  "vendorRefs": [
+    { "vendor": "Microsoft", "ref": "MO1550821", "url": "https://status.cloud.microsoft/" },
+    { "vendor": "Microsoft", "ref": "EX1550543", "url": "https://status.cloud.microsoft/" }
+  ],
+  "updates": [
+    {
+      "time": "2026-11-13T08:29:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft melder bedre stabilitet etter en retting på deler av plattformen, og ruller den nå ut bredere. Feilen er ikke løst. Neste oppdatering fra Microsoft kommer kl. 09:30."
+    },
+    {
+      "time": "2026-11-13T07:57:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft melder fortsatt begrenset bedring og tilfører mer kapasitet. Microsoft kjenner ikke til ondsinnet aktivitet bak hendelsen. Neste oppdatering fra Microsoft kommer kl. 08:30."
+    },
+    {
+      "time": "2026-11-13T00:06:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft har begynt å sette berørte servere tilbake i drift, og ser begrenset bedring i enkelte regioner. Brukere kan oppleve at tjenestene kommer gradvis tilbake. Neste oppdatering fra Microsoft kommer kl. 01:30."
+    },
+    {
+      "time": "2026-11-12T23:11:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft melder at tiltakene så langt ikke har gitt ventet bedring. De tester nå en ny fremgangsmåte på deler av infrastrukturen før den tas i bruk bredere. Neste oppdatering fra Microsoft kommer kl. 00:30."
+    },
+    {
+      "time": "2026-11-12T22:01:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft har funnet en metode som får berørte servere tilbake i drift, og ruller den nå ut bredere. Neste oppdatering fra Microsoft kommer kl. 23:30."
+    },
+    {
+      "time": "2026-11-12T20:16:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft har stanset alle utrullinger og konfigurasjonsendringer mens de undersøker årsaken, og flytter mer trafikk bort fra den berørte infrastrukturen. Neste oppdatering fra Microsoft kommer kl. 22:00."
+    },
+    {
+      "time": "2026-11-12T20:15:00+01:00",
+      "source": "nitd",
+      "text": "Tjenestene er i bedring, og e-post leveres igjen. Microsoft har ikke meldt hendelsen som løst."
+    },
+    {
+      "time": "2026-11-12T19:58:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft flytter trafikk bort fra den berørte infrastrukturen og starter berørte servere på nytt."
+    },
+    {
+      "time": "2026-11-12T19:27:00+01:00",
+      "source": "leverandor",
+      "text": "Microsoft bekrefter hendelsen MO1550821: høy belastning i infrastrukturen i flere regioner gir tilkoblingsfeil i blant annet Exchange Online, Teams og SharePoint."
+    },
+    {
+      "time": "2026-11-12T19:26:00+01:00",
+      "source": "nitd",
+      "text": "Vi registrerer problemer med Outlook og Exchange Online hos flere kunder. Forstyrrelsen starter (Microsofts starttidspunkt)."
+    }
+  ]
+}

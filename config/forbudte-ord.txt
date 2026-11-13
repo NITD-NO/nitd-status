@@ -1,0 +1,4 @@
+# Ord som ikke skal stå i publisert tekst: interne system- og verktøynavn,
+# kundenavn o.l. Ett ord eller uttrykk per linje. Store/små bokstaver ignoreres.
+# Fila publiseres ikke. Fylles ut av NITD.
+HaloPSA

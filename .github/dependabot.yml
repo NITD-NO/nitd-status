@@ -1,0 +1,30 @@
+# Ukentlige oppdateringer av GitHub Actions og de låste testverktøyene.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Oslo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/scripts/qa"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Oslo"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "qa"
+    groups:
+      qa-verktoy:
+        patterns: ["*"]
