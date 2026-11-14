@@ -38,6 +38,7 @@ ingen felles kode og ingen avhengighet til nettstedets skript, stilark eller dat
 | B24 | **Selvgående avslutning:** en hendelse med `autoResolve: "<kilde>"` vises som løst, en NITD-merknad med `clearWhen` forsvinner og meldingen øverst med `messageClearWhen` skjules når leverandøren melder normal drift. «Ukjent» avslutter ingenting. Besluttet av Johannes 13. nov. 2026. | Tjenesten skal være autonom. Ingen trenger å rydde opp etter leverandørhendelser. |
 | B25 | **Cache:** stilark og skript får innholdshash i filnavnet og caches i ett år. HTML, feed og data sendes med `no-cache`. Besluttet 13. nov. 2026 etter at gammel versjon ble vist etter oppdatering. | Nettleser og Cloudflare kan aldri kombinere ny HTML med gamle filer. |
 | B26 | **Kontrakt med norskitdrift.no:** banneret leser `/status.json`. Feltene `overall.state`, `active[].type`, `active[].title` og CORS-headeren (`Access-Control-Allow-Origin: *`) endres eller fjernes ikke uten avtale med Johannes. Låst med test i `scripts/test.mjs`. Avtalt 13. nov. 2026. | Statussiden er den ene kilden til status (B9). |
+| B28 | **Tidsstempler:** «Sist kontrollert» viser når leverandørstatus sist ble kontrollert (bygget), med alder og varsel etter fire timer. Historikk vises dag for dag i sju dager. Godkjent av Johannes 14. nov. 2026. | Kunder skal kunne stole på at tidspunktene stemmer med statusen. |
 | B9 | Statussiden er den ene kilden til status. På sikt viser banneret på norskitdrift.no bare en lenke hit. | Status finnes ett sted, og de to sidene kan ikke vise ulik status. |
 
 ## 3. Struktur
@@ -283,6 +284,20 @@ ikke via PR. Det erstatter PR- og automerge-løsningen i B16:
 - Ulempe: leverandørstatus lagres ikke i git. Historikken finnes hos leverandøren, og
   hendelser skrives som før i `data/hendelser/`.
 - Tester og CI bygger med `--offline` (ingen nettkall). Produksjonsbygget i Cloudflare henter.
+
+### 7.1b Henting hvert 10. minutt i GitHub Actions (B27, lukket)
+
+B27 ble utviklet i PR #6 (jobb hvert 10. minutt, bekreftelse med to like svar, vakt som slipper
+bare `vendorStatus` til `main`). PR-en ble **lukket uten merge 14. nov. 2026**:
+
+- GitHub kjørte planlagte jobber for ujevnt: 5 av rundt 100 forventede kjøringer på 19 timer,
+  med opptil 5 timers mellomrom. Det gir ikke bedre ferskhet enn dagens bygg.
+- Unntak for BRA-01 og ACT-02 i `nitd-repo-standard/baseline.yaml` er ikke registrert.
+
+Gjeldende løsning er B20 (henting ved bygg) med bygg annenhver time (B17). Siden viser
+«Sist kontrollert» og varsler når statusen er eldre enn fire timer (B28).
+Hvis hyppigere oppdatering trengs: vurder en Cloudflare Worker med tidsplan som kaller
+deploy hooken. Koden i PR #6 kan gjenbrukes.
 
 ### 7.2 Sikkerhetsvarsler via webhook (Sophos, Zyxel, Microsoft)
 
