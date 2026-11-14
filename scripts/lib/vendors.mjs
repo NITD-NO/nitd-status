@@ -25,6 +25,7 @@ const MICROSOFT = {
   "restoring service": "recovering",
   "service recovery": "recovering",
   "extended recovery": "recovering",
+  "available": "operational", // Microsofts normaltilstand når ingen hendelse er aktiv
   "service restored": "operational",
   "post-incident report published": "operational",
   "false positive": "operational",

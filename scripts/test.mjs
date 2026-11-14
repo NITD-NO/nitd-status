@@ -466,4 +466,10 @@ test("workflow: minste tilgang, ingen secrets, og main endres bare etter vakt og
   assert.match(wf, /if: steps\.hent\.outputs\.changed == 'true' && steps\.vakt\.outcome == 'success'/);
   assert.match(wf, /node scripts\/vakt\.mjs\n\s+scripts\/sjekk\.sh/);
   assert.match(wf, /persist-credentials: false/);
+test("Microsoft: «Available» er normal drift, ukjente verdier gir «Ukjent»", async () => {
+  const { mapMicrosoft } = await import("./lib/vendors.mjs");
+  assert.equal(mapMicrosoft({ Status: "Available", Title: "" }), "operational");
+  assert.equal(mapMicrosoft({ Status: "Service degradation" }), "degraded");
+  assert.equal(mapMicrosoft({ Status: "Noe nytt" }), "unknown");
+  assert.equal(mapMicrosoft({}), "operational");
 });
