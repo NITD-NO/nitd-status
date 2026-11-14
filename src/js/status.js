@@ -59,7 +59,35 @@
     document.addEventListener("visibilitychange", check);
   }
 
-  function init() { initThemeToggle(); initVersionCheck(); }
+  // Viser hvor lenge siden statusen ble kontrollert, og varsler hvis den er eldre enn 4 timer.
+  function initAge() {
+    var el = document.querySelector("[data-checked]");
+    if (!el) return;
+    var checked = Date.parse(el.getAttribute("data-checked"));
+    var out = el.querySelector("[data-age]");
+    var stale = document.querySelector("[data-stale]");
+    if (isNaN(checked) || !out) return;
+    function update() {
+      var min = Math.max(0, Math.round((Date.now() - checked) / 60000));
+      var text;
+      if (min < 1) text = "nå nettopp";
+      else if (min < 60) text = "for " + min + (min === 1 ? " minutt" : " minutter") + " siden";
+      else {
+        var h = Math.floor(min / 60);
+        text = "for " + h + (h === 1 ? " time" : " timer") + " siden";
+      }
+      out.textContent = " (" + text + ")";
+      if (stale) {
+        var old = min >= 240;
+        stale.hidden = !old;
+        if (old) stale.textContent = "Statusen er ikke kontrollert de siste fire timene. Kontakt oss på 69 81 10 00 ved driftsproblemer.";
+      }
+    }
+    update();
+    setInterval(update, 60000);
+  }
+
+  function init() { initThemeToggle(); initVersionCheck(); initAge(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();

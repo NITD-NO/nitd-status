@@ -200,7 +200,7 @@ test("bygg: tekst escapes, og hentet leverandørstatus vises på kortet med lenk
   const index = readFileSync(join(r2.outDir, "index.html"), "utf8");
   assert.match(index, /Test &amp; prøve &gt; alt/);
   assert.match(index, /Microsoft melder driftsavbrudd\./);
-  assert.match(index, /Kontrollert <time[^>]*>13\. nov\. kl\. 12:55/);
+  assert.match(index, /Sist kontrollert <time[^>]*>13\. nov\. 2026 kl\. 13:00/);
   assert.match(index, /href="https:\/\/status\.cloud\.microsoft\/">Statusside hos Microsoft/);
   assert.match(index, /<span>Driftsavbrudd<\/span>/);
   assert.doesNotMatch(index, /Registrert av NITD|NITD registrerer/);
@@ -340,7 +340,7 @@ test("selvgående: hendelse, merknad og melding avsluttes når leverandøren mel
   assert.doesNotMatch(index, /E-post til helpdesk er påvirket/);
   assert.doesNotMatch(index, /Microsoft 365 har redusert tjeneste/);
   assert.match(index, /Alle tjenester fungerer normalt/);
-  assert.match(index, /Siste 7 dager[\s\S]*Test/);
+  assert.match(index, /Hendelseshistorikk[\s\S]*Test/);
   const page = readFileSync(join(normal.outDir, "hendelser", "2026-11-01-test.html"), "utf8");
   assert.match(page, /Hendelse · Løst/);
   assert.match(page, /Microsoft melder normal drift\./);
@@ -397,4 +397,49 @@ test("Microsoft: «Available» er normal drift, ukjente verdier gir «Ukjent»",
   assert.equal(mapMicrosoft({ Status: "Service degradation" }), "degraded");
   assert.equal(mapMicrosoft({ Status: "Noe nytt" }), "unknown");
   assert.equal(mapMicrosoft({}), "operational");
+});
+
+test("tidspunkt: siden viser når status sist ble kontrollert, ikke når data sist ble endret for hånd", () => {
+  const s = baseStatus({ updated: "2026-11-01T08:00:00+01:00" });
+  const r = runBuild(s, {}, new Date("2026-11-14T07:52:00Z"), { microsoft: { state: "operational", fetched: "2026-11-14T07:52:00Z" } });
+  const index = readFileSync(join(r.outDir, "index.html"), "utf8");
+  assert.match(index, /data-checked="2026-11-14T07:52:00\.000Z">Sist kontrollert <time[^>]*>14\. nov\. 2026 kl\. 08:52/);
+  assert.doesNotMatch(index, /Sist oppdatert/);
+  assert.doesNotMatch(index, /1\. nov\. 2026 kl\. 08:00/);
+  assert.match(index, /Statussiden driftes av Norsk IT Drift AS\. Alle tidspunkter er oppgitt i norsk tid\. Sist kontrollert <time[^>]*>14\. nov\. 2026 kl\. 08:52/);
+  assert.match(index, /data-stale hidden/);
+  const json = JSON.parse(readFileSync(join(r.outDir, "status.json"), "utf8"));
+  assert.equal(json.checked, "2026-11-14T07:52:00.000Z");
+  // Uten henting (offline) vises ikke noe kontrolltidspunkt.
+  const off = readFileSync(join(runBuild(s, {}).outDir, "index.html"), "utf8");
+  assert.doesNotMatch(off, /Sist kontrollert/);
+});
+
+test("historikk: sju dager, nyeste først, også dager uten hendelser, uten beskrivelse i presens", () => {
+  const files = { "2026-11-12-test.json": incident({ title: "Gammel feil", started: "2026-11-12T10:00:00+01:00",
+    detected: "2026-11-12T10:00:00+01:00", resolved: "2026-11-12T12:00:00+01:00", impact: "E-post er nede nå.",
+    updates: [{ time: "2026-11-12T10:00:00+01:00", source: "nitd", text: "Feil." }] }) };
+  const r = runBuild(baseStatus(), files, new Date("2026-11-14T07:52:00Z"));
+  const index = readFileSync(join(r.outDir, "index.html"), "utf8");
+  const hist = index.slice(index.indexOf('id="historikk-tittel"'));
+  assert.equal((hist.match(/class="history-day"/g) || []).length, 7);
+  assert.ok(hist.indexOf("Lørdag 14. november") < hist.indexOf("Torsdag 12. november"));
+  assert.match(hist, /Lørdag 14\. november<\/h3>\s*<p class="meta">Ingen hendelser registrert\./);
+  assert.match(hist, /Torsdag 12\. november[\s\S]*Gammel feil[\s\S]*Løst <time/);
+  assert.doesNotMatch(hist, /E-post er nede nå/);
+  const page = readFileSync(join(r.outDir, "hendelser", "2026-11-12-test.html"), "utf8");
+  assert.match(page, /Beskrivelse under hendelsen<\/dt><dd>E-post er nede nå\./);
+});
+
+test("historikk: en hendelse vises på alle dager den pågikk", () => {
+  const files = { "2026-11-12-lang.json": incident({ title: "Lang feil", status: "handteres", resolved: null,
+    started: "2026-11-12T19:26:00+01:00", detected: "2026-11-12T19:26:00+01:00", autoResolve: "microsoft",
+    updates: [{ time: "2026-11-12T19:26:00+01:00", source: "nitd", text: "Start." },
+      { time: "2026-11-13T11:01:00+01:00", source: "leverandor", text: "Siste." }] }) };
+  const r = runBuild(baseStatus(), files, new Date("2026-11-14T07:52:00Z"), { microsoft: { state: "operational", fetched: "2026-11-14T07:52:00Z" } });
+  const hist = readFileSync(join(r.outDir, "index.html"), "utf8").split('id="historikk-tittel"')[1];
+  const day = name => hist.split(name)[1].split('class="history-day"')[0];
+  assert.match(day("Torsdag 12. november"), /Lang feil/);
+  assert.match(day("Fredag 13. november"), /Lang feil/);
+  assert.match(day("Lørdag 14. november"), /Ingen hendelser registrert/);
 });

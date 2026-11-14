@@ -46,7 +46,7 @@ function pill(state) {
   return `<span class="pill pill--${state}">${esc(STATE_LABEL[state])}</span>`;
 }
 
-function layout({ title, description, path, body, updated, version }) {
+function layout({ title, description, path, body, checked, version }) {
   return `<!DOCTYPE html>
 <html lang="nb" data-version="${esc(version)}">
 <head>
@@ -84,7 +84,7 @@ ${body}
   </main>
   <footer class="site-footer">
     <div class="wrap">
-      <p>Statussiden driftes av Norsk IT Drift AS. Alle tidspunkter er oppgitt i norsk tid.${updated ? ` Sist oppdatert ${time(updated)}.` : ""}</p>
+      <p>Statussiden driftes av Norsk IT Drift AS. Alle tidspunkter er oppgitt i norsk tid.${checked ? ` Sist kontrollert ${time(checked)}.` : ""}</p>
       <p>Siden bruker ikke informasjonskapsler eller sporing.</p>
       <p><a href="https://norskitdrift.no/">norskitdrift.no</a> · <a href="https://norskitdrift.no/personvern">Personvern</a> · <a href="https://norskitdrift.no/tilgjengelighet">Tilgjengelighet</a> · <a href="/arkiv">Arkiv</a> · <a href="/feed.xml">Atom-feed</a> · <a href="/status.json">JSON</a> · <a href="/status.csv">CSV</a></p>
     </div>
@@ -162,7 +162,8 @@ function incidentDetails(inc, components, { headingLevel = 3, limit = Infinity }
   const closed = inc.status === CLOSED[inc.type];
   return `${incidentWhen(inc)}
         <dl class="facts">
-          <dt>Berørt</dt><dd>${esc(componentNames(inc, components))}. ${esc(inc.impact)}</dd>
+          <dt>Berørt</dt><dd>${esc(componentNames(inc, components))}</dd>
+          <dt>${closed ? "Beskrivelse under hendelsen" : "Beskrivelse"}</dt><dd>${esc(inc.impact)}</dd>
           ${inc.advice && !closed ? `<dt>Anbefalt tiltak</dt><dd>${esc(inc.advice)}</dd>` : ""}
           ${inc.nextUpdate && !closed ? `<dt>Neste oppdatering</dt><dd>${time(inc.nextUpdate)}</dd>` : ""}
         </dl>
@@ -198,7 +199,6 @@ function componentCard(comp) {
     lines.push(`<p class="meta">Status fra ${esc(vendor.name)} kan ikke vises nå. Se ${esc(vendor.name)}s statusside.</p>`);
   }
   const foot = [];
-  if (v && v.state !== "unknown") foot.push(`Kontrollert ${time(v.fetched, { year: false })}`);
   if (shown && vendor.statusUrl) foot.push(`<a href="${esc(vendor.statusUrl)}">Statusside hos ${esc(vendor.name)}</a>`);
   return `<li class="component component--${state}">
           <div class="component-head">
@@ -228,24 +228,69 @@ export function overall(status) {
   return s;
 }
 
-export function renderIndex({ status, incidents, components, now, version }) {
+const OSLO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Oslo", year: "numeric", month: "2-digit", day: "2-digit" });
+const DAY_LABEL = new Intl.DateTimeFormat("nb-NO", { timeZone: "Europe/Oslo", weekday: "long", day: "numeric", month: "long" });
+const osloDay = t => OSLO_DAY.format(new Date(t));
+const startOf = i => i.started || i.scheduledStart;
+/** Slutt: løst-tidspunkt, planlagt slutt, siste oppdatering (automatisk løst) eller nå (pågår). */
+function endOf(i, now) {
+  if (i.status !== CLOSED[i.type]) return now.getTime();
+  if (i.resolved) return Date.parse(i.resolved);
+  if (i.type === "vedlikehold") return Date.parse(i.scheduledEnd);
+  return Math.max(...i.updates.map(u => Date.parse(u.time)));
+}
+
+/** Kort linje for historikk og arkiv. Viser fakta, ikke beskrivelsen i presens. */
+function historyItem(inc, components, headingLevel = 4) {
+  const kind = inc.type === "vedlikehold" ? "Vedlikehold" : "Hendelse";
+  let when;
+  if (inc.type === "vedlikehold") when = `${time(inc.scheduledStart)} til ${time(inc.scheduledEnd)}`;
+  else if (inc.autoResolved) when = `Startet ${time(inc.started)}. ${esc(inc.vendorRefs?.[0]?.vendor || "Leverandøren")} melder normal drift.`;
+  else when = `Startet ${time(inc.started)}${inc.resolved ? `. Løst ${time(inc.resolved)}` : ""}.`;
+  return `<li class="history-item history-item--${esc(inc.status)}">
+            <h${headingLevel}><a href="/hendelser/${esc(inc.id)}">${esc(inc.title)}</a></h${headingLevel}>
+            <p class="tag">${esc(kind)} · ${esc(statusLabel(inc))}</p>
+            <p class="meta">${when}</p>
+            <p class="meta">Berørt: ${esc(componentNames(inc, components))}</p>
+          </li>`;
+}
+
+/** Historikk dag for dag (nyeste først), også dager uten hendelser. */
+function historyByDay(incidents, components, now, days) {
+  const out = [];
+  for (let k = 0; k < days; k++) {
+    const t = now.getTime() - k * 864e5;
+    const day = osloDay(t);
+    // En hendelse vises på alle dager den pågikk: fra startdag til sluttdag (pågående: til i dag).
+    const list = incidents.filter(i => osloDay(startOf(i)) <= day && day <= osloDay(endOf(i, now)))
+      .sort((a, b) => Date.parse(startOf(b)) - Date.parse(startOf(a)));
+    const label = DAY_LABEL.format(new Date(t));
+    out.push(`<div class="history-day">
+        <h3>${esc(label.charAt(0).toUpperCase() + label.slice(1))}</h3>
+        ${list.length
+          ? `<ul class="history-list">${list.map(i => historyItem(i, components)).join("")}</ul>`
+          : `<p class="meta">Ingen hendelser registrert.</p>`}
+      </div>`);
+  }
+  return out.join("\n      ");
+}
+
+export function renderIndex({ status, incidents, components, now, version, checked }) {
   const state = overall(status);
   const activeIncidents = incidents.filter(i => i.type === "hendelse" && i.status !== "lost")
     .sort((a, b) => Date.parse(b.started) - Date.parse(a.started));
   const maintenance = incidents.filter(i => i.type === "vedlikehold" && i.status !== "fullfort")
     .sort((a, b) => Date.parse(a.scheduledStart) - Date.parse(b.scheduledStart));
-  const weekAgo = now.getTime() - 7 * 864e5;
-  const end = i => (i.resolved ? Date.parse(i.resolved) : i.scheduledEnd ? Date.parse(i.scheduledEnd)
-    : Math.max(...i.updates.map(u => Date.parse(u.time))));
-  const recent = incidents.filter(i => i.status === CLOSED[i.type] && end(i) >= weekAgo)
-    .sort((a, b) => end(b) - end(a));
 
   const body = `
     <section class="summary summary--${state}" aria-labelledby="status-tittel">
       <h1 id="status-tittel">Driftsstatus</h1>
       <p class="headline">${pill(state)} <span>${esc(HEADLINE[state])}</span></p>
       ${status.message ? `<p class="lead">${esc(status.message)}</p>` : ""}
-      <p class="meta">Sist oppdatert ${time(status.updated)}.</p>
+      ${checked
+        ? `<p class="meta" data-checked="${esc(new Date(checked).toISOString())}">Sist kontrollert ${time(checked)}<span data-age></span>.</p>
+      <p class="stale" data-stale hidden></p>`
+        : ""}
     </section>
 
     ${activeIncidents.length ? `<section aria-labelledby="pagaende-tittel">
@@ -270,11 +315,9 @@ export function renderIndex({ status, incidents, components, now, version }) {
 
     ${contactBlock()}
 
-    <section aria-labelledby="siste-tittel">
-      <h2 id="siste-tittel">Siste 7 dager</h2>
-      ${recent.length
-        ? recent.map(i => incidentCard(i, components, { full: false })).join("\n      ")
-        : `<p>Ingen avsluttede hendelser de siste 7 dagene.</p>`}
+    <section aria-labelledby="historikk-tittel">
+      <h2 id="historikk-tittel">Hendelseshistorikk</h2>
+      ${historyByDay(incidents, components, now, 7)}
       <p><a href="/arkiv">Arkiv for de siste 90 dagene</a></p>
     </section>
 
@@ -282,11 +325,11 @@ export function renderIndex({ status, incidents, components, now, version }) {
   return layout({
     title: "Driftsstatus – Norsk IT Drift",
     description: "Driftsstatus for Norsk IT Drift og leverandørene Microsoft 365, Sophos, Zyxel og Uniweb. Pågående hendelser, planlagt vedlikehold og historikk.",
-    path: "/", body, updated: status.updated, version,
+    path: "/", body, checked, version,
   });
 }
 
-export function renderIncident({ inc, components, status, version }) {
+export function renderIncident({ inc, components, status, version, checked }) {
   const body = `
     <p class="breadcrumb"><a href="/">Driftsstatus</a> › <a href="/arkiv">Arkiv</a></p>
     <article class="incident-page" aria-labelledby="h-${esc(inc.id)}">
@@ -298,11 +341,11 @@ export function renderIncident({ inc, components, status, version }) {
   return layout({
     title: `${inc.title} – Driftsstatus – Norsk IT Drift`,
     description: `${statusLabel(inc)}: ${inc.title}.`,
-    path: `/hendelser/${inc.id}`, body, updated: status.updated, version,
+    path: `/hendelser/${inc.id}`, body, checked, version,
   });
 }
 
-export function renderArchive({ incidents, components, status, version }) {
+export function renderArchive({ incidents, components, status, version, checked }) {
   const closed = incidents.filter(i => i.status === CLOSED[i.type])
     .sort((a, b) => Date.parse(b.started || b.scheduledStart) - Date.parse(a.started || a.scheduledStart));
   const body = `
@@ -310,21 +353,21 @@ export function renderArchive({ incidents, components, status, version }) {
     <h1>Arkiv</h1>
     <p class="lead">Avsluttede hendelser og vedlikehold de siste 90 dagene, nyeste først.</p>
     ${closed.length
-      ? closed.map(i => incidentCard(i, components, { full: false, headingLevel: 2 })).join("\n    ")
+      ? `<ul class="history-list">${closed.map(i => historyItem(i, components, 2)).join("")}</ul>`
       : `<p>Ingen avsluttede hendelser de siste 90 dagene.</p>`}`;
   return layout({
     title: "Arkiv – Driftsstatus – Norsk IT Drift",
     description: "Avsluttede hendelser og vedlikehold hos Norsk IT Drift de siste 90 dagene.",
-    path: "/arkiv", body, updated: status.updated, version,
+    path: "/arkiv", body, checked, version,
   });
 }
 
-export function render404({ status, version }) {
+export function render404({ status, version, checked }) {
   const body = `
     <h1>Fant ikke siden</h1>
     <p class="lead">Adressen finnes ikke på statussiden.</p>
     <p><a href="/">Til driftsstatus</a></p>`;
-  return layout({ title: "Fant ikke siden – Driftsstatus – Norsk IT Drift", description: "Siden finnes ikke.", path: "/404", body, updated: status.updated, version });
+  return layout({ title: "Fant ikke siden – Driftsstatus – Norsk IT Drift", description: "Siden finnes ikke.", path: "/404", body, checked, version });
 }
 
 export { STATES };
