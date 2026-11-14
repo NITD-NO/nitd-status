@@ -25,7 +25,7 @@ function rows(status) {
   return out;
 }
 
-export function renderStatusJson({ status, incidents, overallState, now }) {
+export function renderStatusJson({ status, incidents, overallState, now, checked = null }) {
   const active = incidents.filter(i => i.status !== CLOSED[i.type]).map(i => ({
     id: i.id,
     type: i.type,
@@ -43,6 +43,7 @@ export function renderStatusJson({ status, incidents, overallState, now }) {
     site: SITE,
     generated: now.toISOString(),
     updated: new Date(status.updated).toISOString(),
+    checked,
     overall: { state: overallState, label: STATE_LABEL[overallState] },
     components: rows(status),
     active,

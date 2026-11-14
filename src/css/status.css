@@ -200,3 +200,32 @@ main.wrap { padding-top: 2rem; padding-bottom: 3rem; }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 .contact .urgent { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--line); }
+
+/* Varsel når statusen ikke er kontrollert på lenge */
+.stale {
+  margin: .5rem 0 0; padding: .6rem .8rem; border-radius: 8px;
+  border: 1px solid var(--deg-fg); background: var(--deg-bg); color: var(--ink); font-weight: 600;
+}
+
+/* Hendelseshistorikk dag for dag og arkiv */
+.history-day { padding: .9rem 0; border-top: 1px solid var(--line); }
+.history-day:first-of-type { border-top: 0; padding-top: .25rem; }
+.history-day h3 { font-size: 1.05rem; margin: 0 0 .4rem; }
+.history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.history-item {
+  padding: .7rem .9rem; border: 1px solid var(--line); border-left: 4px solid var(--line);
+  border-radius: 10px; background: var(--surface);
+}
+.history-item--undersokes, .history-item--handteres { border-left-color: var(--deg-fg); }
+.history-item--overvakes, .history-item--planlagt, .history-item--pagaende { border-left-color: var(--rec-fg); }
+.history-item h2, .history-item h3, .history-item h4 { font-size: 1rem; margin: 0 0 .15rem; }
+.history-item h2 a, .history-item h3 a, .history-item h4 a { color: var(--ink); }
+.history-item p { margin: 0; }
+.history-item .tag { margin: 0 0 .2rem; }
+
+/* Mobil: tettere kort, så listen blir kortere */
+@media (max-width: 34rem) {
+  .component { padding: .75rem .85rem; gap: .2rem; }
+  .summary { padding: 1rem 1rem .8rem; }
+  h1 { font-size: 1.6rem; }
+}

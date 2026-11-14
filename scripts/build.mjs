@@ -145,13 +145,15 @@ export function build({ dataDir = DATA, outDir = DIST, now = new Date(), write =
   const assets = hashedAssets();
   for (const [k, a] of Object.entries(assets)) ASSETS[k] = "/" + a.dest;
   const pages = new Map();
-  pages.set("index.html", renderIndex({ status, incidents: visible, components, now, version }));
-  pages.set("arkiv.html", renderArchive({ incidents: visible, components, status, version }));
-  pages.set("404.html", render404({ status, version }));
-  for (const inc of visible) pages.set(`hendelser/${inc.id}.html`, renderIncident({ inc, components, status, version }));
+  // Når leverandørstatus sist ble kontrollert (dette bygget). Uten henting (tester/offline) vises ikke tidspunktet.
+  const checked = vendors ? now.toISOString() : null;
+  pages.set("index.html", renderIndex({ status, incidents: visible, components, now, version, checked }));
+  pages.set("arkiv.html", renderArchive({ incidents: visible, components, status, version, checked }));
+  pages.set("404.html", render404({ status, version, checked }));
+  for (const inc of visible) pages.set(`hendelser/${inc.id}.html`, renderIncident({ inc, components, status, version, checked }));
   pages.set("feed.xml", renderFeed({ incidents: visible, components, status }));
   pages.set("versjon.json", JSON.stringify({ version, updated: status.updated }) + "\n");
-  pages.set("status.json", renderStatusJson({ status, incidents: visible, overallState: overall(status), now }));
+  pages.set("status.json", renderStatusJson({ status, incidents: visible, overallState: overall(status), now, checked }));
   pages.set("status.csv", renderStatusCsv({ status }));
 
   if (write) {
