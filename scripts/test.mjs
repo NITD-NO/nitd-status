@@ -390,3 +390,11 @@ test("kontrakt: /status.json har feltene banneret på norskitdrift.no bruker, og
   const h = readFileSync(join(ROOT, "src", "_headers"), "utf8");
   assert.match(h, /\/status\.json\n(  .+\n)*  Access-Control-Allow-Origin: \*/);
 });
+
+test("Microsoft: «Available» er normal drift, ukjente verdier gir «Ukjent»", async () => {
+  const { mapMicrosoft } = await import("./lib/vendors.mjs");
+  assert.equal(mapMicrosoft({ Status: "Available", Title: "" }), "operational");
+  assert.equal(mapMicrosoft({ Status: "Service degradation" }), "degraded");
+  assert.equal(mapMicrosoft({ Status: "Noe nytt" }), "unknown");
+  assert.equal(mapMicrosoft({}), "operational");
+});
